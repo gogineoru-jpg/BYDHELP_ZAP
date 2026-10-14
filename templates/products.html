@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
+    <!-- Добавление -->
+    <div class="block" style="flex: 1; min-width: 300px;">
+        <h2>Добавить запчасть</h2>
+        <form action="/add_product" method="POST">
+            <input type="text" name="oem" placeholder="OEM / Артикул (обязательно)" required>
+            <input type="text" name="name" placeholder="Название детали (обязательно)" required>
+            <input type="text" name="brand" placeholder="Бренд / Производитель">
+            <input type="number" step="0.01" name="purchase_price" placeholder="Закупочная цена ($)">
+            <input type="number" step="0.01" name="sell_price" placeholder="Цена продажи ($)">
+            <input type="number" name="stock" placeholder="Количество (шт.)" value="1">
+            <button type="submit">Добавить в базу</button>
+        </form>
+    </div>
+
+    <!-- Поиск и список -->
+    <div class="block" style="flex: 2; min-width: 320px;">
+        <h2>Склад и Поиск запчастей</h2>
+        <form action="/products" method="GET" style="display: flex; gap: 8px; margin-bottom: 15px;">
+            <input type="text" name="q" placeholder="Поиск по OEM или названию..." value="{{ query }}" style="margin: 0;">
+            <button type="submit" style="width: auto; padding: 0 18px;">Найти</button>
+        </form>
+        <ul style="max-height: 500px; overflow-y: auto;">
+            {% for p in products %}
+            <li>
+                <strong>{{ p.oem }}</strong> — {{ p.name }} (<i>{{ p.brand }}</i>)<br>
+                Закуп: <b>${{ p.purchase_price }}</b> | Продажа: <b style="color: #38bdf8;">${{ p.sell_price }}</b> | Остаток: <b>{{ p.stock }} шт.</b>
+                
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #475569; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <form action="/edit_product/{{ p.id }}" method="POST" style="display: flex; gap: 4px; width: auto; align-items: center; margin: 0;">
+                        <input type="text" name="name" value="{{ p.name }}" style="width: 110px; margin: 0; padding: 4px; font-size: 12px;">
+                        <input type="number" step="0.01" name="sell_price" value="{{ p.sell_price }}" style="width: 65px; margin: 0; padding: 4px; font-size: 12px;">
+                        <input type="number" name="stock" value="{{ p.stock }}" style="width: 50px; margin: 0; padding: 4px; font-size: 12px;">
+                        <button type="submit" class="btn-small">ОК</button>
+                    </form>
+                    <form action="/delete_product/{{ p.id }}" method="POST" style="margin: 0;">
+                        <button type="submit" class="btn-small btn-danger" onclick="return confirm('Удалить эту запчасть?');">Удалить</button>
+                    </form>
+                </div>
+            </li>
+            {% else %}
+            <p style="color: #94a3b8; text-align: center;">Ничего не найдено</p>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
