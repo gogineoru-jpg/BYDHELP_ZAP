@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="block">
+    <h2>Все оформленные заказы</h2>
+    <ul style="max-height: 600px; overflow-y: auto;">
+        {% for o in orders %}
+        <li style="background: rgba(15, 23, 42, 0.8); border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 12px;">
+            <strong>Клиент: {{ o.client_name }}</strong> <span style="font-size: 11px; color: #94a3b8; float: right;">{{ o.created_at.strftime('%d.%m.%Y %H:%M') }}</span><br>
+            VIN: {{ o.vin or 'не указан' }} | Статус: <b style="color: #f59e0b;">{{ o.status }}</b><br>
+            <strong style="color: #cbd5e1;">Состав заказа:</strong>
+            <ul style="margin: 4px 0; padding-left: 15px; list-style: disc;">
+                {% for item in o.items %}
+                <li>{{ item.product_name }} (OEM: {{ item.oem }}) — {{ item.quantity }} шт. × ${{ item.price }} = <b style="color: #38bdf8;">${{ item.quantity * item.price }}</b></li>
+                {% endfor %}
+            </ul>
+            Итого сумма: <b style="color: #38bdf8; font-size: 14px;">${{ o.total_price }}</b>
+            <form action="/delete_order/{{ o.id }}" method="POST" style="margin-top: 8px;">
+                <button type="submit" class="btn-small btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="return confirm('Удалить этот заказ?');">Удалить заказ</button>
+            </form>
+        </li>
+        {% else %}
+        <p style="color: #94a3b8; text-align: center;">Заказов пока нет</p>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}
