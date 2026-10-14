@@ -30,21 +30,28 @@
         </div>
     </div>
 
-    <!-- Создание заказа-наряда -->
+    <!-- Регистрация клиента и заказ-наряд -->
     <div class="block">
-        <h2>3. Оформить заказ-наряд</h2>
+        <h2>Регистрация клиента и запрос / заказ-наряд</h2>
         <form action="/create_order" method="POST">
-            <input type="text" name="client_name" placeholder="Имя клиента или телефон" required>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" name="first_name" placeholder="Имя" required style="flex: 1;">
+                <input type="text" name="last_name" placeholder="Фамилия" required style="flex: 1;">
+            </div>
+            <input type="text" name="phone" placeholder="Номер телефона" required>
             <input type="text" name="vin" placeholder="VIN-код автомобиля (17 символов)">
+            
+            <textarea name="comment" placeholder="Комментарий / На какую запчасть идет запрос (если нет в наличии)..." style="height: 75px; resize: vertical;"></textarea>
+
             <select name="status">
-                <option>Запрос поступил</option>
+                <option>Запрос поступил (под заказ)</option>
                 <option>Идет подбор аналогов</option>
                 <option>Согласовано с клиентом</option>
                 <option>Заказ оплачен</option>
                 <option>Выдано со склада</option>
             </select>
 
-            <p style="margin: 8px 0 4px; font-weight: 600; font-size: 13px; color: #cbd5e1;">Выберите товары для продажи со склада:</p>
+            <p style="margin: 8px 0 4px; font-weight: 600; font-size: 13px; color: #cbd5e1;">Выберите товары со склада (при продаже из наличия):</p>
             <input type="text" id="orderSearchInput" onkeyup="filterOrderProducts()" placeholder="🔍 Поиск детали по OEM или названию..." style="margin-bottom: 6px; font-size: 12px; padding: 6px 10px;">
 
             <div style="max-height: 200px; overflow-y: auto; border: 1px solid #475569; padding: 8px; margin: 8px 0; background: #0f172a; border-radius: 6px;" id="orderProductsBox">
@@ -57,11 +64,11 @@
                     <input type="number" name="quantities" value="1" min="1" style="width: 50px; padding: 3px; font-size: 12px; margin: 0; height: 26px;">
                 </div>
                 {% else %}
-                <p style="font-size: 12px; color: #94a3b8; text-align: center;">Склад пуст. Добавьте запчасти в разделе «Склад запчастей».</p>
+                <p style="font-size: 12px; color: #94a3b8; text-align: center;">Склад пуст.</p>
                 {% endfor %}
             </div>
 
-            <button type="submit" style="background: #16a34a; margin-top: 10px;">Сохранить заказ-наряд</button>
+            <button type="submit" style="background: #16a34a; margin-top: 10px;">Сохранить заказ / запрос</button>
         </form>
     </div>
 
