@@ -20,7 +20,7 @@
             backdrop-filter: blur(10px); 
             padding: 15px 25px; 
             border-radius: 12px; 
-            margin-bottom: 25px; 
+            margin-bottom: 20px; 
             border: 1px solid rgba(255, 255, 255, 0.1); 
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); 
         }
@@ -37,6 +37,26 @@
             transition: background 0.2s; 
         }
         .backup-btn:hover { background: #0369a1; }
+
+        /* Блок Аналитики */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: rgba(30, 41, 59, 0.85);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+        }
+        .stat-title { font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-bottom: 5px; }
+        .stat-value { font-size: 20px; font-weight: bold; color: #f8fafc; }
+        .stat-value.green { color: #4ade80; }
+        .stat-value.blue { color: #38bdf8; }
+
         .container { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
         .block { 
             background: rgba(30, 41, 59, 0.85); 
@@ -93,7 +113,7 @@
         .btn-small:hover { background: #15803d; }
         .btn-danger { background: #dc2626; }
         .btn-danger:hover { background: #b91c1c; }
-        .order-products-box { max-height: 160px; overflow-y: auto; border: 1px solid #475569; padding: 8px; margin: 8px 0; background: #0f172a; border-radius: 6px; }
+        .order-products-box { max-height: 180px; overflow-y: auto; border: 1px solid #475569; padding: 8px; margin: 8px 0; background: #0f172a; border-radius: 6px; }
         .order-card { background: rgba(15, 23, 42, 0.8); border-left: 4px solid #f59e0b; padding: 12px; margin-bottom: 12px; border-radius: 8px; font-size: 13px; }
     </style>
 </head>
@@ -104,6 +124,26 @@
             <button type="submit" class="backup-btn">💾 Сделать бэкап на Яндекс.Диск</button>
         </form>
     </header>
+
+    <!-- Блок Аналитики -->
+    <div class="analytics-grid">
+        <div class="stat-card">
+            <div class="stat-title">Товары на складе (Закуп)</div>
+            <div class="stat-value">${{ analytics.stock_cost }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Товары на складе (Продажа)</div>
+            <div class="stat-value blue">${{ analytics.stock_sell }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Общая выручка (Продано)</div>
+            <div class="stat-value blue">${{ analytics.total_sales }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Чистая прибыль</div>
+            <div class="stat-value green">${{ analytics.total_profit }}</div>
+        </div>
+    </div>
 
     <div class="container">
         
@@ -132,7 +172,7 @@
                 {% for p in products %}
                 <li>
                     <strong>{{ p.oem }}</strong> — {{ p.name }} (<i>{{ p.brand }}</i>)<br>
-                    Цена: <b style="color: #38bdf8;">${{ p.sell_price }}</b> | Остаток: <b>{{ p.stock }} шт.</b>
+                    Закуп: <b>${{ p.purchase_price }}</b> | Продажа: <b style="color: #38bdf8;">${{ p.sell_price }}</b> | Остаток: <b>{{ p.stock }} шт.</b>
                     
                     <div class="product-actions">
                         <form action="/edit_product/{{ p.id }}" method="POST">
@@ -167,12 +207,16 @@
                 </select>
 
                 <p style="margin: 8px 0 4px; font-weight: 600; font-size: 13px; color: #cbd5e1;">Выберите товары для продажи:</p>
-                <div class="order-products-box">
+                
+                <!-- Поле живого поиска запчастей в 3-м блоке -->
+                <input type="text" id="orderSearchInput" onkeyup="filterOrderProducts()" placeholder="🔍 Поиск детали по OEM или названию..." style="margin-bottom: 6px; font-size: 12px; padding: 6px 10px;">
+
+                <div class="order-products-box" id="orderProductsBox">
                     {% for p in products %}
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
+                    <div class="order-product-item" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
                         <label style="font-size: 12px; display: flex; align-items: center; gap: 6px; flex: 1; cursor: pointer;">
                             <input type="checkbox" name="product_ids" value="{{ p.id }}" style="width: auto; margin: 0;">
-                            {{ p.oem }} — {{ p.name }} (<span style="color: #38bdf8;">${{ p.sell_price }}</span>)
+                            <span class="product-text">{{ p.oem }} — {{ p.name }} (<span style="color: #38bdf8;">${{ p.sell_price }}</span>)</span>
                         </label>
                         <input type="number" name="quantities" value="1" min="1" style="width: 50px; padding: 3px; font-size: 12px; margin: 0; height: 26px;" placeholder="Кол">
                     </div>
@@ -208,5 +252,27 @@
         </div>
 
     </div>
+
+    <!-- Скрипт быстрого поиска товаров внутри блока оформления заказа -->
+    <script>
+        function filterOrderProducts() {
+            var input = document.getElementById('orderSearchInput');
+            var filter = input.value.toLowerCase();
+            var box = document.getElementById('orderProductsBox');
+            var items = box.getElementsByClassName('order-product-item');
+
+            for (var i = 0; i < items.length; i++) {
+                var textSpan = items[i].querySelector('.product-text');
+                if (textSpan) {
+                    var txtValue = textSpan.textContent || textSpan.innerText;
+                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                        items[i].style.display = "flex";
+                    } else {
+                        items[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
 </body>
 </html>
