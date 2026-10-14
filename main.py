@@ -60,7 +60,6 @@ with app.app_context():
     restore_from_yandex_disk()
     db.create_all()
 
-# Главная страница (Дашборд, календарь, создание заказа)
 @app.route('/')
 @auth.login_required
 def index():
@@ -103,7 +102,6 @@ def index():
 
     return render_template('index.html', products=all_products, analytics=analytics, selected_month=selected_month)
 
-# Страница склада запчастей
 @app.route('/products')
 @auth.login_required
 def products_page():
@@ -118,7 +116,6 @@ def products_page():
         products = Product.query.all()
     return render_template('products.html', products=products, query=query)
 
-# Страница заказов
 @app.route('/orders')
 @auth.login_required
 def orders_page():
@@ -173,17 +170,28 @@ def edit_product(id):
 @app.route('/create_order', methods=['POST'])
 @auth.login_required
 def create_order():
-    client_name = request.form.get('client_name')
+    first_name = request.form.get('first_name')
+    last_name = request.form.get('last_name')
+    phone = request.form.get('phone')
     vin = request.form.get('vin')
+    comment = request.form.get('comment')
     status = request.form.get('status')
     
     product_ids = request.form.getlist('product_ids')
     quantities = request.form.getlist('quantities')
     
-    if not client_name or not product_ids:
+    if not first_name or not phone:
         return redirect(url_for('index'))
         
-    new_order = Order(client_name=client_name, vin=vin, status=status, total_price=0.0)
+    new_order = Order(
+        first_name=first_name, 
+        last_name=last_name, 
+        phone=phone, 
+        vin=vin, 
+        comment=comment,
+        status=status, 
+        total_price=0.0
+    )
     db.session.add(new_order)
     db.session.commit()
     
