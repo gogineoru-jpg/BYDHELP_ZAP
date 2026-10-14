@@ -4,30 +4,107 @@
     <meta charset="UTF-8">
     <title>CRM Автозапчасти</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f9; color: #333; }
-        .container { display: flex; gap: 20px; flex-wrap: wrap; }
-        .block { background: white; padding: 20px; border-radius: 8px; flex: 1; min-width: 320px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { font-size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top: 0; }
-        input, select { width: 100%; padding: 8px; margin: 6px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { background: #007bff; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        button:hover { background: #0056b3; }
-        ul { padding-left: 0; list-style: none; max-height: 350px; overflow-y: auto; }
-        li { background: #f9f9f9; margin-bottom: 12px; padding: 10px; border-radius: 6px; border-left: 4px solid #007bff; font-size: 13px; }
-        .search-box { display: flex; gap: 5px; margin-bottom: 10px; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+            color: #f8fafc; 
+            min-height: 100vh; 
+        }
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: rgba(30, 41, 59, 0.7); 
+            backdrop-filter: blur(10px); 
+            padding: 15px 25px; 
+            border-radius: 12px; 
+            margin-bottom: 25px; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); 
+        }
+        h1 { margin: 0; font-size: 22px; color: #38bdf8; font-weight: 600; }
+        .backup-btn { 
+            background: #0284c7; 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 13px; 
+            transition: background 0.2s; 
+        }
+        .backup-btn:hover { background: #0369a1; }
+        .container { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+        .block { 
+            background: rgba(30, 41, 59, 0.85); 
+            backdrop-filter: blur(10px); 
+            padding: 20px; 
+            border-radius: 12px; 
+            flex: 1; 
+            min-width: 320px; 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); 
+        }
+        h2 { font-size: 16px; color: #e2e8f0; border-bottom: 2px solid #38bdf8; padding-bottom: 8px; margin-top: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { 
+            width: 100%; 
+            padding: 10px; 
+            margin: 6px 0 12px 0; 
+            box-sizing: border-box; 
+            background: #0f172a; 
+            border: 1px solid #475569; 
+            color: #f8fafc; 
+            border-radius: 6px; 
+            font-size: 14px; 
+        }
+        input:focus, select:focus { border-color: #38bdf8; outline: none; }
+        button { 
+            background: #2563eb; 
+            color: white; 
+            border: none; 
+            padding: 10px; 
+            width: 100%; 
+            cursor: pointer; 
+            border-radius: 6px; 
+            font-weight: 600; 
+            transition: background 0.2s; 
+        }
+        button:hover { background: #1d4ed8; }
+        ul { padding-left: 0; list-style: none; max-height: 420px; overflow-y: auto; margin: 0; }
+        li { 
+            background: rgba(15, 23, 42, 0.6); 
+            margin-bottom: 10px; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border-left: 4px solid #38bdf8; 
+            font-size: 13px; 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+        }
+        .search-box { display: flex; gap: 8px; margin-bottom: 15px; }
         .search-box input { margin: 0; }
-        .search-box button { width: auto; padding: 0 15px; }
-        .product-actions { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ddd; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+        .search-box button { width: auto; padding: 0 18px; }
+        .product-actions { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #475569; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
         .product-actions form { display: flex; gap: 4px; width: 100%; align-items: center; }
-        .product-actions input { width: 70px; padding: 4px; margin: 0; font-size: 12px; }
-        .btn-small { padding: 5px 10px; font-size: 12px; width: auto; background: #28a745; }
-        .btn-danger { background: #dc3545; }
-        .btn-danger:hover { background: #c82333; }
-        .order-products-box { max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 5px; margin: 6px 0; background: #fff; border-radius: 4px; }
-        .order-card { background: #fff8dc; border-left: 4px solid #ffc107; padding: 10px; margin-bottom: 10px; border-radius: 6px; font-size: 13px; }
+        .product-actions input { width: 75px; padding: 5px; margin: 0; font-size: 12px; height: 30px; }
+        .btn-small { padding: 5px 10px; font-size: 12px; width: auto; background: #16a34a; }
+        .btn-small:hover { background: #15803d; }
+        .btn-danger { background: #dc2626; }
+        .btn-danger:hover { background: #b91c1c; }
+        .order-products-box { max-height: 160px; overflow-y: auto; border: 1px solid #475569; padding: 8px; margin: 8px 0; background: #0f172a; border-radius: 6px; }
+        .order-card { background: rgba(15, 23, 42, 0.8); border-left: 4px solid #f59e0b; padding: 12px; margin-bottom: 12px; border-radius: 8px; font-size: 13px; }
     </style>
 </head>
 <body>
-    <h1>CRM для подбора автозапчастей</h1>
+    <header>
+        <h1>⚡ CRM Автозапчасти</h1>
+        <form action="/manual_backup" method="POST" style="margin: 0; width: auto;">
+            <button type="submit" class="backup-btn">💾 Сделать бэкап на Яндекс.Диск</button>
+        </form>
+    </header>
+
     <div class="container">
         
         <!-- Блок 1: Добавление товара на склад -->
@@ -55,12 +132,12 @@
                 {% for p in products %}
                 <li>
                     <strong>{{ p.oem }}</strong> — {{ p.name }} (<i>{{ p.brand }}</i>)<br>
-                    Цена: <b>${{ p.sell_price }}</b> | Остаток: <b>{{ p.stock }} шт.</b>
+                    Цена: <b style="color: #38bdf8;">${{ p.sell_price }}</b> | Остаток: <b>{{ p.stock }} шт.</b>
                     
                     <div class="product-actions">
                         <form action="/edit_product/{{ p.id }}" method="POST">
                             <input type="text" name="name" value="{{ p.name }}" title="Название" style="width: 110px;">
-                            <input type="number" step="0.01" name="sell_price" value="{{ p.sell_price }}" title="Цена ($)" style="width: 60px;">
+                            <input type="number" step="0.01" name="sell_price" value="{{ p.sell_price }}" title="Цена ($)" style="width: 65px;">
                             <input type="number" name="stock" value="{{ p.stock }}" title="Количество" style="width: 50px;">
                             <button type="submit" class="btn-small">ОК</button>
                         </form>
@@ -70,7 +147,7 @@
                     </div>
                 </li>
                 {% else %}
-                <p style="color: #777; text-align: center;">Ничего не найдено</p>
+                <p style="color: #94a3b8; text-align: center;">Ничего не найдено</p>
                 {% endfor %}
             </ul>
         </div>
@@ -89,43 +166,43 @@
                     <option>Выдано со склада</option>
                 </select>
 
-                <p style="margin: 8px 0 4px; font-weight: bold; font-size: 13px;">Выберите товары для продажи:</p>
+                <p style="margin: 8px 0 4px; font-weight: 600; font-size: 13px; color: #cbd5e1;">Выберите товары для продажи:</p>
                 <div class="order-products-box">
                     {% for p in products %}
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #f1f1f1; padding-bottom: 4px;">
-                        <label style="font-size: 12px; display: flex; align-items: center; gap: 5px; flex: 1;">
-                            <input type="checkbox" name="product_ids" value="{{ p.id }}">
-                            {{ p.oem }} - {{ p.name }} (${{ p.sell_price }})
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
+                        <label style="font-size: 12px; display: flex; align-items: center; gap: 6px; flex: 1; cursor: pointer;">
+                            <input type="checkbox" name="product_ids" value="{{ p.id }}" style="width: auto; margin: 0;">
+                            {{ p.oem }} — {{ p.name }} (<span style="color: #38bdf8;">${{ p.sell_price }}</span>)
                         </label>
-                        <input type="number" name="quantities" value="1" min="1" style="width: 50px; padding: 2px; font-size: 12px; margin: 0;" placeholder="Кол-во">
+                        <input type="number" name="quantities" value="1" min="1" style="width: 50px; padding: 3px; font-size: 12px; margin: 0; height: 26px;" placeholder="Кол">
                     </div>
                     {% else %}
-                    <p style="font-size: 12px; color: #777; text-align: center;">Склад пуст</p>
+                    <p style="font-size: 12px; color: #94a3b8; text-align: center;">Склад пуст</p>
                     {% endfor %}
                 </div>
 
-                <button type="submit" style="background: #28a745; margin-top: 10px;">Сохранить заказ-наряд</button>
+                <button type="submit" style="background: #16a34a; margin-top: 10px;">Сохранить заказ-наряд</button>
             </form>
 
-            <h3 style="margin-top: 20px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Активные заказы</h3>
+            <h3 style="margin-top: 20px; border-bottom: 1px solid #475569; padding-bottom: 5px; font-size: 15px;">Активные заказы</h3>
             <ul style="max-height: 250px; overflow-y: auto;">
                 {% for o in orders %}
                 <li class="order-card">
                     <strong>Клиент: {{ o.client_name }}</strong><br>
-                    VIN: {{ o.vin or 'не указан' }} | Статус: <b>{{ o.status }}</b><br>
-                    <strong>Состав заказа:</strong>
+                    VIN: {{ o.vin or 'не указан' }} | Статус: <b style="color: #f59e0b;">{{ o.status }}</b><br>
+                    <strong style="color: #cbd5e1;">Состав заказа:</strong>
                     <ul style="margin: 4px 0; padding-left: 15px; list-style: disc;">
                         {% for item in o.items %}
-                        <li>{{ item.product_name }} (OEM: {{ item.oem }}) — {{ item.quantity }} шт. × ${{ item.price }} = <b>${{ item.quantity * item.price }}</b></li>
+                        <li>{{ item.product_name }} (OEM: {{ item.oem }}) — {{ item.quantity }} шт. × ${{ item.price }} = <b style="color: #38bdf8;">${{ item.quantity * item.price }}</b></li>
                         {% endfor %}
                     </ul>
-                    <b>Итого сумма: ${{ o.total_price }}</b>
-                    <form action="/delete_order/{{ o.id }}" method="POST" style="margin-top: 5px;">
-                        <button type="submit" class="btn-small btn-danger" style="padding: 2px 6px; font-size: 11px;" onclick="return confirm('Удалить этот заказ?');">Удалить заказ</button>
+                    Итого сумма: <b style="color: #38bdf8; font-size: 14px;">${{ o.total_price }}</b>
+                    <form action="/delete_order/{{ o.id }}" method="POST" style="margin-top: 8px;">
+                        <button type="submit" class="btn-small btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="return confirm('Удалить этот заказ?');">Удалить заказ</button>
                     </form>
                 </li>
                 {% else %}
-                <p style="color: #777; text-align: center; font-size: 12px;">Нет оформленных заказов</p>
+                <p style="color: #94a3b8; text-align: center; font-size: 12px;">Нет оформленных заказов</p>
                 {% endfor %}
             </ul>
         </div>
