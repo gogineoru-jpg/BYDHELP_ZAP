@@ -20,7 +20,6 @@ def verify_password(username, password):
     if username in USERS and USERS[username] == password:
         return username
 
-# Ваш токен Яндекс.Диска
 YANDEX_TOKEN = "y0__wgBEJKG960HGJW0SyDKzqioGbuBt_HQl-9a_ugEH5cUuWmZV5h5" 
 
 def backup_to_yandex_disk():
@@ -45,7 +44,6 @@ with app.app_context():
 @app.route('/')
 @auth.login_required
 def index():
-    # Автоматический бэкап при заходе
     backup_to_yandex_disk()
     
     query = request.args.get('q', '')
@@ -58,10 +56,35 @@ def index():
     else:
         products = Product.query.all()
         
+    all_products = Product.query.all()
     orders = Order.query.order_by(Order.id.desc()).all()
-    return render_template('index.html', products=products, orders=orders, query=query)
 
-# Маршрут для ручного бэкапа по кнопке
+    # Расчет аналитики
+    stock_value_cost = sum(p.purchase_price * p.stock for p in all_products)  # Склад по закупке
+    stock_value_sell = sum(p.sell_price * p.stock for p in all_products)      # Склад по продаже
+    
+    total_sales = sum(o.total_price for o in orders)                          # Всего продано (выручка)
+    
+    # Считаем себестоимость всех проданных товаров для расчета прибыли
+    total_cost_sold = 0.0
+    for o in orders:
+        for item in o.items:
+            # Ищем закупочную цену детали по OEM
+            prod = Product.query.filter_by(oem=item.oem).first()
+            p_price = prod.purchase_price if prod else 0.0
+            total_cost_sold += p_price * item.quantity
+
+    total_profit = total_sales - total_cost_sold                              # Чистая прибыль
+
+    analytics = {
+        "stock_cost": round(stock_value_cost, 2),
+        "stock_sell": round(stock_value_sell, 2),
+        "total_sales": round(total_sales, 2),
+        "total_profit": round(total_profit, 2)
+    }
+
+    return render_template('index.html', products=products, orders=orders, query=query, analytics=analytics)
+
 @app.route('/manual_backup', methods=['POST'])
 @auth.login_required
 def manual_backup():
