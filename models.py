@@ -26,3 +26,21 @@ class Product(db.Model):
     sell_price = db.Column(db.Float, default=0.0)
     stock = db.Column(db.Integer, default=0)
     cross_codes = db.Column(db.String(255))
+
+# Таблица заказа (Сделка / Заказ-наряд)
+class Order(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_name = db.Column(db.String(100), nullable=False)
+    vin = db.Column(db.String(50))
+    status = db.Column(db.String(50), default='Запрос поступил')
+    total_price = db.Column(db.Float, default=0.0)
+    items = db.relationship('OrderItem', backref='order', cascade='all, delete-orphan')
+
+# Таблица позиций внутри заказа
+class OrderItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
+    product_name = db.Column(db.String(150), nullable=False)
+    oem = db.Column(db.String(50))
+    price = db.Column(db.Float, default=0.0)
+    quantity = db.Column(db.Integer, default=1)
