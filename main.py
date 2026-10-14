@@ -1,3 +1,5 @@
+import os
+import requests
 from flask import Flask, render_template, request, redirect, url_for
 from flask_httpauth import HTTPBasicAuth
 from models import db, Client, Vehicle, Product
@@ -9,9 +11,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 auth = HTTPBasicAuth()
 
-# Данные для входа в CRM
 USERS = {
-    "admin": "zap12345"  # Логин: admin, Пароль: zap12345
+    "admin": "zap12345"  # Логин и пароль для входа в CRM
 }
 
 @auth.verify_password
@@ -19,12 +20,36 @@ def verify_password(username, password):
     if username in USERS and USERS[username] == password:
         return username
 
+# Ваш OAuth-токен Яндекс.Диска
+YANDEX_TOKEN = "y0__wgBEJKG960HGJW0SyDKzqioGbuBt_HQl-9a_ugEH5cUuWmZV5h5" 
+
+def backup_to_yandex_disk():
+    if not YANDEX_TOKEN:
+        return
+    
+    db_path = 'crm.db'
+    if os.path.exists(db_path):
+        headers = {'Authorization': f'OAuth {YANDEX_TOKEN}'}
+        try:
+            # Запрос ссылки для загрузки бэкапа в папку приложения
+            url = "https://cloud-api.yandex.net/v1/disk/resources/upload?path=app:/crm_backup.db&overwrite=true"
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                upload_url = response.json().get('href')
+                with open(db_path, 'rb') as f:
+                    requests.put(upload_url, files={'file': f})
+        except Exception as e:
+            print(f"Ошибка бэкапа: {e}")
+
 with app.app_context():
     db.create_all()
 
 @app.route('/')
 @auth.login_required
 def index():
+    # Автоматический бэкап базы данных на Яндекс.Диск при открытии главной страницы
+    backup_to_yandex_disk()
+    
     query = request.args.get('q', '')
     if query:
         products = Product.query.filter(
