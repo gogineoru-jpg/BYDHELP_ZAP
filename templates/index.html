@@ -1,1 +1,48 @@
-
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>CRM Автозапчасти</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f9; }
+        .container { display: flex; gap: 20px; }
+        .block { background: white; padding: 20px; border-radius: 8px; flex: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { font-size: 18px; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
+        input, select { width: 100%; padding: 8px; margin: 6px 0; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>CRM для подбора автозапчастей</h1>
+    <div class="container">
+        <div class="block">
+            <h2>1. Клиент и Автомобиль</h2>
+            <input type="text" placeholder="Телефон или Имя клиента">
+            <input type="text" placeholder="VIN-код (17 символов)">
+            <input type="text" placeholder="Марка / Модель">
+        </div>
+        <div class="block">
+            <h2>2. Подбор запчастей</h2>
+            <input type="text" placeholder="Поиск по артикулу / OEM">
+            <ul>
+                {% for p in products %}
+                <li>{{ p.oem }} - {{ p.name }} ({{ p.brand }}) — {{ p.sell_price }} руб. [Склад: {{ p.stock }} шт.]</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="block">
+            <h2>3. Статус сделки</h2>
+            <select>
+                <option>Запрос</option>
+                <option>Подбор</option>
+                <option>Предложение</option>
+                <option>Оплата</option>
+                <option>Выдача</option>
+            </select>
+            <h3>Итого: 0 руб.</h3>
+            <button>Сохранить заказ</button>
+        </div>
+    </div>
+</body>
+</html>
