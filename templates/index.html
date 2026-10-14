@@ -1,280 +1,68 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>CRM Автозапчасти</title>
-    <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
-            color: #f8fafc; 
-            min-height: 100vh; 
-        }
-        header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: rgba(30, 41, 59, 0.7); 
-            backdrop-filter: blur(10px); 
-            padding: 15px 25px; 
-            border-radius: 12px; 
-            margin-bottom: 20px; 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); 
-        }
-        h1 { margin: 0; font-size: 22px; color: #38bdf8; font-weight: 600; }
-        .backup-btn { 
-            background: #0284c7; 
-            color: white; 
-            border: none; 
-            padding: 8px 16px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-weight: 600; 
-            font-size: 13px; 
-            transition: background 0.2s; 
-        }
-        .backup-btn:hover { background: #0369a1; }
-
-        /* Панель фильтра по месяцам (Календарь) */
-        .calendar-filter {
-            background: rgba(30, 41, 59, 0.85);
-            padding: 12px 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .calendar-filter label { font-size: 13px; font-weight: 600; color: #cbd5e1; }
-        .calendar-filter input { width: auto; margin: 0; padding: 6px 10px; }
-        .calendar-filter button { width: auto; padding: 6px 14px; font-size: 13px; background: #0284c7; }
-
-        /* Блок Аналитики */
-        .analytics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-        .stat-card {
-            background: rgba(30, 41, 59, 0.85);
-            padding: 15px 20px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
-        }
-        .stat-title { font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-bottom: 5px; }
-        .stat-value { font-size: 20px; font-weight: bold; color: #f8fafc; }
-        .stat-value.green { color: #4ade80; }
-        .stat-value.blue { color: #38bdf8; }
-
-        .container { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
-        .block { 
-            background: rgba(30, 41, 59, 0.85); 
-            backdrop-filter: blur(10px); 
-            padding: 20px; 
-            border-radius: 12px; 
-            flex: 1; 
-            min-width: 320px; 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); 
-        }
-        h2 { font-size: 16px; color: #e2e8f0; border-bottom: 2px solid #38bdf8; padding-bottom: 8px; margin-top: 0; text-transform: uppercase; letter-spacing: 0.5px; }
-        input, select { 
-            width: 100%; 
-            padding: 10px; 
-            margin: 6px 0 12px 0; 
-            box-sizing: border-box; 
-            background: #0f172a; 
-            border: 1px solid #475569; 
-            color: #f8fafc; 
-            border-radius: 6px; 
-            font-size: 14px; 
-        }
-        input:focus, select:focus { border-color: #38bdf8; outline: none; }
-        button { 
-            background: #2563eb; 
-            color: white; 
-            border: none; 
-            padding: 10px; 
-            width: 100%; 
-            cursor: pointer; 
-            border-radius: 6px; 
-            font-weight: 600; 
-            transition: background 0.2s; 
-        }
-        button:hover { background: #1d4ed8; }
-        ul { padding-left: 0; list-style: none; max-height: 420px; overflow-y: auto; margin: 0; }
-        li { 
-            background: rgba(15, 23, 42, 0.6); 
-            margin-bottom: 10px; 
-            padding: 12px; 
-            border-radius: 8px; 
-            border-left: 4px solid #38bdf8; 
-            font-size: 13px; 
-            border: 1px solid rgba(255, 255, 255, 0.05); 
-        }
-        .search-box { display: flex; gap: 8px; margin-bottom: 15px; }
-        .search-box input { margin: 0; }
-        .search-box button { width: auto; padding: 0 18px; }
-        .product-actions { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #475569; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-        .product-actions form { display: flex; gap: 4px; width: 100%; align-items: center; }
-        .product-actions input { width: 75px; padding: 5px; margin: 0; font-size: 12px; height: 30px; }
-        .btn-small { padding: 5px 10px; font-size: 12px; width: auto; background: #16a34a; }
-        .btn-small:hover { background: #15803d; }
-        .btn-danger { background: #dc2626; }
-        .btn-danger:hover { background: #b91c1c; }
-        .order-products-box { max-height: 180px; overflow-y: auto; border: 1px solid #475569; padding: 8px; margin: 8px 0; background: #0f172a; border-radius: 6px; }
-        .order-card { background: rgba(15, 23, 42, 0.8); border-left: 4px solid #f59e0b; padding: 12px; margin-bottom: 12px; border-radius: 8px; font-size: 13px; }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>⚡ CRM Автозапчасти</h1>
-        <form action="/manual_backup" method="POST" style="margin: 0; width: auto;">
-            <button type="submit" class="backup-btn">💾 Сделать бэкап на Яндекс.Диск</button>
-        </form>
-    </header>
-
+{% extends "base.html" %}
+{% block content %}
     <!-- Календарь / Фильтр по месяцам -->
-    <form action="/" method="GET" class="calendar-filter">
-        <label for="monthPicker">📅 Выбрать месяц для отчета:</label>
-        <input type="month" id="monthPicker" name="month" value="{{ selected_month }}">
-        <button type="submit">Показать</button>
+    <form action="/" method="GET" style="background: rgba(30, 41, 59, 0.85); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; border: 1px solid rgba(255, 255, 255, 0.08);">
+        <label for="monthPicker" style="font-size: 13px; font-weight: 600; color: #cbd5e1;">📅 Выбрать месяц для отчета:</label>
+        <input type="month" id="monthPicker" name="month" value="{{ selected_month }}" style="width: auto; margin: 0; padding: 6px 10px;">
+        <button type="submit" style="width: auto; padding: 7px 14px; font-size: 13px;">Показать</button>
         {% if selected_month %}
-        <a href="/" style="color: #38bdf8; font-size: 13px; text-decoration: none;">Сбросить фильтр</a>
+        <a href="/" style="color: #38bdf8; font-size: 13px; text-decoration: none;">Сбросить</a>
         {% endif %}
     </form>
 
     <!-- Блок Аналитики -->
-    <div class="analytics-grid">
-        <div class="stat-card">
-            <div class="stat-title">Товары на складе (Закуп)</div>
-            <div class="stat-value">${{ analytics.stock_cost }}</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+        <div class="block" style="margin: 0; padding: 15px 20px;">
+            <div style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Товары на складе (Закуп)</div>
+            <div style="font-size: 20px; font-weight: bold; color: #f8fafc;">${{ analytics.stock_cost }}</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-title">Товары на складе (Продажа)</div>
-            <div class="stat-value blue">${{ analytics.stock_sell }}</div>
+        <div class="block" style="margin: 0; padding: 15px 20px;">
+            <div style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Товары на складе (Продажа)</div>
+            <div style="font-size: 20px; font-weight: bold; color: #38bdf8;">${{ analytics.stock_sell }}</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-title">Выручка за период</div>
-            <div class="stat-value blue">${{ analytics.total_sales }}</div>
+        <div class="block" style="margin: 0; padding: 15px 20px;">
+            <div style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Выручка за период</div>
+            <div style="font-size: 20px; font-weight: bold; color: #38bdf8;">${{ analytics.total_sales }}</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-title">Прибыль за период</div>
-            <div class="stat-value green">${{ analytics.total_profit }}</div>
+        <div class="block" style="margin: 0; padding: 15px 20px;">
+            <div style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Прибыль за период</div>
+            <div style="font-size: 20px; font-weight: bold; color: #4ade80;">${{ analytics.total_profit }}</div>
         </div>
     </div>
 
-    <div class="container">
-        
-        <!-- Блок 1: Добавление товара на склад -->
-        <div class="block">
-            <h2>1. Добавить запчасть</h2>
-            <form action="/add_product" method="POST">
-                <input type="text" name="oem" placeholder="OEM / Артикул (обязательно)" required>
-                <input type="text" name="name" placeholder="Название детали (обязательно)" required>
-                <input type="text" name="brand" placeholder="Бренд / Производитель">
-                <input type="number" step="0.01" name="purchase_price" placeholder="Закупочная цена ($)">
-                <input type="number" step="0.01" name="sell_price" placeholder="Цена продажи ($)">
-                <input type="number" name="stock" placeholder="Количество (шт.)" value="1">
-                <button type="submit">Добавить в базу</button>
-            </form>
-        </div>
+    <!-- Создание заказа-наряда -->
+    <div class="block">
+        <h2>3. Оформить заказ-наряд</h2>
+        <form action="/create_order" method="POST">
+            <input type="text" name="client_name" placeholder="Имя клиента или телефон" required>
+            <input type="text" name="vin" placeholder="VIN-код автомобиля (17 символов)">
+            <select name="status">
+                <option>Запрос поступил</option>
+                <option>Идет подбор аналогов</option>
+                <option>Согласовано с клиентом</option>
+                <option>Заказ оплачен</option>
+                <option>Выдано со склада</option>
+            </select>
 
-        <!-- Блок 2: Поиск и Каталог запчастей -->
-        <div class="block">
-            <h2>2. Склад и Поиск</h2>
-            <form action="/" method="GET" class="search-box">
-                <input type="text" name="q" placeholder="Поиск по OEM или названию..." value="{{ query }}">
-                <button type="submit">Найти</button>
-            </form>
-            <ul>
+            <p style="margin: 8px 0 4px; font-weight: 600; font-size: 13px; color: #cbd5e1;">Выберите товары для продажи со склада:</p>
+            <input type="text" id="orderSearchInput" onkeyup="filterOrderProducts()" placeholder="🔍 Поиск детали по OEM или названию..." style="margin-bottom: 6px; font-size: 12px; padding: 6px 10px;">
+
+            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #475569; padding: 8px; margin: 8px 0; background: #0f172a; border-radius: 6px;" id="orderProductsBox">
                 {% for p in products %}
-                <li>
-                    <strong>{{ p.oem }}</strong> — {{ p.name }} (<i>{{ p.brand }}</i>)<br>
-                    Закуп: <b>${{ p.purchase_price }}</b> | Продажа: <b style="color: #38bdf8;">${{ p.sell_price }}</b> | Остаток: <b>{{ p.stock }} шт.</b>
-                    
-                    <div class="product-actions">
-                        <form action="/edit_product/{{ p.id }}" method="POST">
-                            <input type="text" name="name" value="{{ p.name }}" title="Название" style="width: 110px;">
-                            <input type="number" step="0.01" name="sell_price" value="{{ p.sell_price }}" title="Цена ($)" style="width: 65px;">
-                            <input type="number" name="stock" value="{{ p.stock }}" title="Количество" style="width: 50px;">
-                            <button type="submit" class="btn-small">ОК</button>
-                        </form>
-                        <form action="/delete_product/{{ p.id }}" method="POST" style="margin-top: 4px;">
-                            <button type="submit" class="btn-small btn-danger" onclick="return confirm('Удалить эту запчасть?');">Удалить</button>
-                        </form>
-                    </div>
-                </li>
-                {% else %}
-                <p style="color: #94a3b8; text-align: center;">Ничего не найдено</p>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <!-- Блок 3: Клиент, Подбор запчастей и Заказ-наряд -->
-        <div class="block">
-            <h2>3. Клиент и Заказ-наряд</h2>
-            <form action="/create_order" method="POST">
-                <input type="text" name="client_name" placeholder="Имя клиента или телефон" required>
-                <input type="text" name="vin" placeholder="VIN-код автомобиля (17 символов)">
-                <select name="status">
-                    <option>Запрос поступил</option>
-                    <option>Идет подбор аналогов</option>
-                    <option>Согласовано с клиентом</option>
-                    <option>Заказ оплачен</option>
-                    <option>Выдано со склада</option>
-                </select>
-
-                <p style="margin: 8px 0 4px; font-weight: 600; font-size: 13px; color: #cbd5e1;">Выберите товары для продажи:</p>
-                
-                <input type="text" id="orderSearchInput" onkeyup="filterOrderProducts()" placeholder="🔍 Поиск детали по OEM или названию..." style="margin-bottom: 6px; font-size: 12px; padding: 6px 10px;">
-
-                <div class="order-products-box" id="orderProductsBox">
-                    {% for p in products %}
-                    <div class="order-product-item" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
-                        <label style="font-size: 12px; display: flex; align-items: center; gap: 6px; flex: 1; cursor: pointer;">
-                            <input type="checkbox" name="product_ids" value="{{ p.id }}" style="width: auto; margin: 0;">
-                            <span class="product-text">{{ p.oem }} — {{ p.name }} (<span style="color: #38bdf8;">${{ p.sell_price }}</span>) [Ост: {{ p.stock }}]</span>
-                        </label>
-                        <input type="number" name="quantities" value="1" min="1" style="width: 50px; padding: 3px; font-size: 12px; margin: 0; height: 26px;" placeholder="Кол">
-                    </div>
-                    {% else %}
-                    <p style="font-size: 12px; color: #94a3b8; text-align: center;">Склад пуст</p>
-                    {% endfor %}
+                <div class="order-product-item" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
+                    <label style="font-size: 12px; display: flex; align-items: center; gap: 6px; flex: 1; cursor: pointer;">
+                        <input type="checkbox" name="product_ids" value="{{ p.id }}" style="width: auto; margin: 0;">
+                        <span class="product-text">{{ p.oem }} — {{ p.name }} (<span style="color: #38bdf8;">${{ p.sell_price }}</span>) [Ост: {{ p.stock }}]</span>
+                    </label>
+                    <input type="number" name="quantities" value="1" min="1" style="width: 50px; padding: 3px; font-size: 12px; margin: 0; height: 26px;">
                 </div>
-
-                <button type="submit" style="background: #16a34a; margin-top: 10px;">Сохранить заказ-наряд</button>
-            </form>
-
-            <h3 style="margin-top: 20px; border-bottom: 1px solid #475569; padding-bottom: 5px; font-size: 15px;">Заказы за период</h3>
-            <ul style="max-height: 250px; overflow-y: auto;">
-                {% for o in orders %}
-                <li class="order-card">
-                    <strong>Клиент: {{ o.client_name }}</strong> <span style="font-size: 11px; color: #94a3b8; float: right;">{{ o.created_at.strftime('%d.%m.%Y %H:%M') }}</span><br>
-                    VIN: {{ o.vin or 'не указан' }} | Статус: <b style="color: #f59e0b;">{{ o.status }}</b><br>
-                    <strong style="color: #cbd5e1;">Состав заказа:</strong>
-                    <ul style="margin: 4px 0; padding-left: 15px; list-style: disc;">
-                        {% for item in o.items %}
-                        <li>{{ item.product_name }} (OEM: {{ item.oem }}) — {{ item.quantity }} шт. × ${{ item.price }} = <b style="color: #38bdf8;">${{ item.quantity * item.price }}</b></li>
-                        {% endfor %}
-                    </ul>
-                    Итого сумма: <b style="color: #38bdf8; font-size: 14px;">${{ o.total_price }}</b>
-                    <form action="/delete_order/{{ o.id }}" method="POST" style="margin-top: 8px;">
-                        <button type="submit" class="btn-small btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="return confirm('Удалить этот заказ?');">Удалить заказ</button>
-                    </form>
-                </li>
                 {% else %}
-                <p style="color: #94a3b8; text-align: center; font-size: 12px;">Заказов за выбранный месяц не найдено</p>
+                <p style="font-size: 12px; color: #94a3b8; text-align: center;">Склад пуст. Добавьте запчасти в разделе «Склад запчастей».</p>
                 {% endfor %}
-            </ul>
-        </div>
+            </div>
 
+            <button type="submit" style="background: #16a34a; margin-top: 10px;">Сохранить заказ-наряд</button>
+        </form>
     </div>
 
     <script>
@@ -283,19 +71,13 @@
             var filter = input.value.toLowerCase();
             var box = document.getElementById('orderProductsBox');
             var items = box.getElementsByClassName('order-product-item');
-
             for (var i = 0; i < items.length; i++) {
                 var textSpan = items[i].querySelector('.product-text');
                 if (textSpan) {
                     var txtValue = textSpan.textContent || textSpan.innerText;
-                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                        items[i].style.display = "flex";
-                    } else {
-                        items[i].style.display = "none";
-                    }
+                    items[i].style.display = txtValue.toLowerCase().indexOf(filter) > -1 ? "flex" : "none";
                 }
             }
         }
     </script>
-</body>
-</html>
+{% endblock %}
