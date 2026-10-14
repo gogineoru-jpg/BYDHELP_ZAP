@@ -59,27 +59,26 @@ def index():
         
     all_products = Product.query.all()
     
-    # Фильтр заказов по выбранному месяцу (календарь)
+    # Защищенный запрос заказов (если база старая, сортируем по id)
     selected_month = request.args.get('month', '')
-    orders_query = Order.query
-    
-    if selected_month:
-        try:
+    try:
+        orders_query = Order.query
+        if selected_month:
             year, month = selected_month.split('-')
             orders_query = orders_query.filter(
                 db.extract('year', Order.created_at) == int(year),
                 db.extract('month', Order.created_at) == int(month)
             )
-        except Exception:
-            pass
-            
-    orders = orders_query.order_by(Order.id.desc()).all()
+        orders = orders_query.order_by(Order.id.desc()).all()
+    except Exception:
+        # Если колонка created_at еще не создана в старой бд
+        orders = Order.query.order_by(Order.id.desc()).all()
 
-    # Аналитика склада (всегда по всему складу)
+    # Аналитика склада
     stock_value_cost = sum(p.purchase_price * p.stock for p in all_products)
     stock_value_sell = sum(p.sell_price * p.stock for p in all_products)
     
-    # Аналитика продаж за выбранный период
+    # Аналитика продаж
     total_sales = sum(o.total_price for o in orders)
     
     total_cost_sold = 0.0
