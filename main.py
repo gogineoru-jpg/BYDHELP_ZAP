@@ -23,7 +23,27 @@ def verify_password(username, password):
 
 YANDEX_TOKEN = "y0__wgBEJKG960HGJW0SyDKzqioGbuBt_HQl-9a_ugEH5cUuWmZV5h5" 
 
+def restore_from_yandex_disk():
+    """Скачивает последнюю сохраненную базу с Яндекс.Диска при запуске"""
+    if not YANDEX_TOKEN:
+        return
+    db_path = 'crm.db'
+    headers = {'Authorization': f'OAuth {YANDEX_TOKEN}'}
+    try:
+        url = "https://cloud-api.yandex.net/v1/disk/resources/download?path=app:/crm_backup.db"
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            download_url = response.json().get('href')
+            r = requests.get(download_url)
+            if r.status_code == 200:
+                with open(db_path, 'wb') as f:
+                    f.write(r.content)
+                print("База успешно восстановлена с Яндекс.Диска!")
+    except Exception as e:
+        print(f"Не удалось восстановить базу с Яндекс.Диска (возможно, бэкапа еще нет): {e}")
+
 def backup_to_yandex_disk():
+    """Отправляет актуальную базу на Яндекс.Диск"""
     if not YANDEX_TOKEN:
         return
     db_path = 'crm.db'
@@ -40,6 +60,7 @@ def backup_to_yandex_disk():
             print(f"Ошибка бэкапа: {e}")
 
 with app.app_context():
+    restore_from_yandex_disk() # Сначала пытаемся вернуть данные
     db.create_all()
 
 @app.route('/')
@@ -59,7 +80,6 @@ def index():
         
     all_products = Product.query.all()
     
-    # Защищенный запрос заказов (если база старая, сортируем по id)
     selected_month = request.args.get('month', '')
     try:
         orders_query = Order.query
@@ -71,14 +91,11 @@ def index():
             )
         orders = orders_query.order_by(Order.id.desc()).all()
     except Exception:
-        # Если колонка created_at еще не создана в старой бд
         orders = Order.query.order_by(Order.id.desc()).all()
 
-    # Аналитика склада
     stock_value_cost = sum(p.purchase_price * p.stock for p in all_products)
     stock_value_sell = sum(p.sell_price * p.stock for p in all_products)
     
-    # Аналитика продаж
     total_sales = sum(o.total_price for o in orders)
     
     total_cost_sold = 0.0
