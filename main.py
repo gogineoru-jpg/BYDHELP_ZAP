@@ -24,7 +24,6 @@ def verify_password(username, password):
 YANDEX_TOKEN = "y0__wgBEJKG960HGJW0SyDKzqioGbuBt_HQl-9a_ugEH5cUuWmZV5h5" 
 
 def restore_from_yandex_disk():
-    """Скачивает последнюю сохраненную базу с Яндекс.Диска при запуске"""
     if not YANDEX_TOKEN:
         return
     db_path = 'crm.db'
@@ -38,12 +37,10 @@ def restore_from_yandex_disk():
             if r.status_code == 200:
                 with open(db_path, 'wb') as f:
                     f.write(r.content)
-                print("База успешно восстановлена с Яндекс.Диска!")
     except Exception as e:
-        print(f"Не удалось восстановить базу с Яндекс.Диска (возможно, бэкапа еще нет): {e}")
+        print(f"Ошибка восстановления: {e}")
 
 def backup_to_yandex_disk():
-    """Отправляет актуальную базу на Яндекс.Диск"""
     if not YANDEX_TOKEN:
         return
     db_path = 'crm.db'
@@ -60,24 +57,14 @@ def backup_to_yandex_disk():
             print(f"Ошибка бэкапа: {e}")
 
 with app.app_context():
-    restore_from_yandex_disk() # Сначала пытаемся вернуть данные
+    restore_from_yandex_disk()
     db.create_all()
 
+# Главная страница (Дашборд, календарь, создание заказа)
 @app.route('/')
 @auth.login_required
 def index():
     backup_to_yandex_disk()
-    
-    query = request.args.get('q', '')
-    if query:
-        products = Product.query.filter(
-            (Product.oem.ilike(f'%{query}%')) | 
-            (Product.name.ilike(f'%{query}%')) | 
-            (Product.brand.ilike(f'%{query}%'))
-        ).all()
-    else:
-        products = Product.query.all()
-        
     all_products = Product.query.all()
     
     selected_month = request.args.get('month', '')
@@ -89,9 +76,9 @@ def index():
                 db.extract('year', Order.created_at) == int(year),
                 db.extract('month', Order.created_at) == int(month)
             )
-        orders = orders_query.order_by(Order.id.desc()).all()
+        orders = orders_query.all()
     except Exception:
-        orders = Order.query.order_by(Order.id.desc()).all()
+        orders = Order.query.all()
 
     stock_value_cost = sum(p.purchase_price * p.stock for p in all_products)
     stock_value_sell = sum(p.sell_price * p.stock for p in all_products)
@@ -114,7 +101,29 @@ def index():
         "total_profit": round(total_profit, 2)
     }
 
-    return render_template('index.html', products=products, orders=orders, query=query, analytics=analytics, selected_month=selected_month)
+    return render_template('index.html', products=all_products, analytics=analytics, selected_month=selected_month)
+
+# Страница склада запчастей
+@app.route('/products')
+@auth.login_required
+def products_page():
+    query = request.args.get('q', '')
+    if query:
+        products = Product.query.filter(
+            (Product.oem.ilike(f'%{query}%')) | 
+            (Product.name.ilike(f'%{query}%')) | 
+            (Product.brand.ilike(f'%{query}%'))
+        ).all()
+    else:
+        products = Product.query.all()
+    return render_template('products.html', products=products, query=query)
+
+# Страница заказов
+@app.route('/orders')
+@auth.login_required
+def orders_page():
+    orders = Order.query.order_by(Order.id.desc()).all()
+    return render_template('orders.html', orders=orders)
 
 @app.route('/manual_backup', methods=['POST'])
 @auth.login_required
@@ -140,7 +149,7 @@ def add_product():
         )
         db.session.add(new_p)
         db.session.commit()
-    return redirect(url_for('index'))
+    return redirect(url_for('products_page'))
 
 @app.route('/delete_product/<int:id>', methods=['POST'])
 @auth.login_required
@@ -148,7 +157,7 @@ def delete_product(id):
     product = Product.query.get_or_404(id)
     db.session.delete(product)
     db.session.commit()
-    return redirect(url_for('index'))
+    return redirect(url_for('products_page'))
 
 @app.route('/edit_product/<int:id>', methods=['POST'])
 @auth.login_required
@@ -159,7 +168,7 @@ def edit_product(id):
     product.sell_price = float(request.form.get('sell_price') or product.sell_price)
     product.stock = int(request.form.get('stock') or product.stock)
     db.session.commit()
-    return redirect(url_for('index'))
+    return redirect(url_for('products_page'))
 
 @app.route('/create_order', methods=['POST'])
 @auth.login_required
@@ -204,7 +213,7 @@ def create_order():
             
     new_order.total_price = total
     db.session.commit()
-    return redirect(url_for('index'))
+    return redirect(url_for('orders_page'))
 
 @app.route('/delete_order/<int:id>', methods=['POST'])
 @auth.login_required
@@ -212,7 +221,7 @@ def delete_order(id):
     order = Order.query.get_or_404(id)
     db.session.delete(order)
     db.session.commit()
-    return redirect(url_for('index'))
+    return redirect(url_for('orders_page'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
