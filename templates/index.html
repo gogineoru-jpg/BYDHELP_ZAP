@@ -11,7 +11,7 @@
         input, select { width: 100%; padding: 8px; margin: 6px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         button { background: #007bff; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; border-radius: 4px; font-weight: bold; }
         button:hover { background: #0056b3; }
-        ul { padding-left: 0; list-style: none; max-height: 400px; overflow-y: auto; }
+        ul { padding-left: 0; list-style: none; max-height: 350px; overflow-y: auto; }
         li { background: #f9f9f9; margin-bottom: 12px; padding: 10px; border-radius: 6px; border-left: 4px solid #007bff; font-size: 13px; }
         .search-box { display: flex; gap: 5px; margin-bottom: 10px; }
         .search-box input { margin: 0; }
@@ -22,6 +22,8 @@
         .btn-small { padding: 5px 10px; font-size: 12px; width: auto; background: #28a745; }
         .btn-danger { background: #dc3545; }
         .btn-danger:hover { background: #c82333; }
+        .order-products-box { max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 5px; margin: 6px 0; background: #fff; border-radius: 4px; }
+        .order-card { background: #fff8dc; border-left: 4px solid #ffc107; padding: 10px; margin-bottom: 10px; border-radius: 6px; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -55,7 +57,6 @@
                     <strong>{{ p.oem }}</strong> — {{ p.name }} (<i>{{ p.brand }}</i>)<br>
                     Цена: <b>${{ p.sell_price }}</b> | Остаток: <b>{{ p.stock }} шт.</b>
                     
-                    <!-- Форма изменения и удаления товара -->
                     <div class="product-actions">
                         <form action="/edit_product/{{ p.id }}" method="POST">
                             <input type="text" name="name" value="{{ p.name }}" title="Название" style="width: 110px;">
@@ -74,20 +75,59 @@
             </ul>
         </div>
 
-        <!-- Блок 3: Клиент и Сделка -->
+        <!-- Блок 3: Клиент, Подбор запчастей и Заказ-наряд -->
         <div class="block">
-            <h2>3. Клиент и Сделка</h2>
-            <input type="text" placeholder="Имя клиента или телефон">
-            <input type="text" placeholder="VIN-код автомобиля (17 символов)">
-            <select>
-                <option>Запрос поступил</option>
-                <option>Идет подбор аналогов</option>
-                <option>Согласовано с клиентом</option>
-                <option>Заказ оплачен</option>
-                <option>Выдано со склада</option>
-            </select>
-            <h3>Итого: $0</h3>
-            <button style="background: #28a745;">Сохранить сделку</button>
+            <h2>3. Клиент и Заказ-наряд</h2>
+            <form action="/create_order" method="POST">
+                <input type="text" name="client_name" placeholder="Имя клиента или телефон" required>
+                <input type="text" name="vin" placeholder="VIN-код автомобиля (17 символов)">
+                <select name="status">
+                    <option>Запрос поступил</option>
+                    <option>Идет подбор аналогов</option>
+                    <option>Согласовано с клиентом</option>
+                    <option>Заказ оплачен</option>
+                    <option>Выдано со склада</option>
+                </select>
+
+                <p style="margin: 8px 0 4px; font-weight: bold; font-size: 13px;">Выберите товары для продажи:</p>
+                <div class="order-products-box">
+                    {% for p in products %}
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #f1f1f1; padding-bottom: 4px;">
+                        <label style="font-size: 12px; display: flex; align-items: center; gap: 5px; flex: 1;">
+                            <input type="checkbox" name="product_ids" value="{{ p.id }}">
+                            {{ p.oem }} - {{ p.name }} (${{ p.sell_price }})
+                        </label>
+                        <input type="number" name="quantities" value="1" min="1" style="width: 50px; padding: 2px; font-size: 12px; margin: 0;" placeholder="Кол-во">
+                    </div>
+                    {% else %}
+                    <p style="font-size: 12px; color: #777; text-align: center;">Склад пуст</p>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" style="background: #28a745; margin-top: 10px;">Сохранить заказ-наряд</button>
+            </form>
+
+            <h3 style="margin-top: 20px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Активные заказы</h3>
+            <ul style="max-height: 250px; overflow-y: auto;">
+                {% for o in orders %}
+                <li class="order-card">
+                    <strong>Клиент: {{ o.client_name }}</strong><br>
+                    VIN: {{ o.vin or 'не указан' }} | Статус: <b>{{ o.status }}</b><br>
+                    <strong>Состав заказа:</strong>
+                    <ul style="margin: 4px 0; padding-left: 15px; list-style: disc;">
+                        {% for item in o.items %}
+                        <li>{{ item.product_name }} (OEM: {{ item.oem }}) — {{ item.quantity }} шт. × ${{ item.price }} = <b>${{ item.quantity * item.price }}</b></li>
+                        {% endfor %}
+                    </ul>
+                    <b>Итого сумма: ${{ o.total_price }}</b>
+                    <form action="/delete_order/{{ o.id }}" method="POST" style="margin-top: 5px;">
+                        <button type="submit" class="btn-small btn-danger" style="padding: 2px 6px; font-size: 11px;" onclick="return confirm('Удалить этот заказ?');">Удалить заказ</button>
+                    </form>
+                </li>
+                {% else %}
+                <p style="color: #777; text-align: center; font-size: 12px;">Нет оформленных заказов</p>
+                {% endfor %}
+            </ul>
         </div>
 
     </div>
