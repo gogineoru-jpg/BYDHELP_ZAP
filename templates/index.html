@@ -35,8 +35,8 @@
                 <input type="text" name="oem" placeholder="OEM / Артикул (обязательно)" required>
                 <input type="text" name="name" placeholder="Название детали (обязательно)" required>
                 <input type="text" name="brand" placeholder="Бренд / Производитель">
-                <input type="number" step="0.01" name="purchase_price" placeholder="Закупочная цена (руб.)">
-                <input type="number" step="0.01" name="sell_price" placeholder="Цена продажи (руб.)">
+                <input type="number" step="0.01" name="purchase_price" placeholder="Закупочная цена ($)">
+                <input type="number" step="0.01" name="sell_price" placeholder="Цена продажи ($)">
                 <input type="number" name="stock" placeholder="Количество (шт.)" value="1">
                 <button type="submit">Добавить в базу</button>
             </form>
@@ -53,13 +53,13 @@
                 {% for p in products %}
                 <li>
                     <strong>{{ p.oem }}</strong> — {{ p.name }} (<i>{{ p.brand }}</i>)<br>
-                    Цена: <b>{{ p.sell_price }} руб.</b> | Остаток: <b>{{ p.stock }} шт.</b>
+                    Цена: <b>${{ p.sell_price }}</b> | Остаток: <b>{{ p.stock }} шт.</b>
                     
                     <!-- Форма изменения и удаления товара -->
                     <div class="product-actions">
                         <form action="/edit_product/{{ p.id }}" method="POST">
                             <input type="text" name="name" value="{{ p.name }}" title="Название" style="width: 110px;">
-                            <input type="number" step="0.01" name="sell_price" value="{{ p.sell_price }}" title="Цена" style="width: 60px;">
+                            <input type="number" step="0.01" name="sell_price" value="{{ p.sell_price }}" title="Цена ($)" style="width: 60px;">
                             <input type="number" name="stock" value="{{ p.stock }}" title="Количество" style="width: 50px;">
                             <button type="submit" class="btn-small">ОК</button>
                         </form>
@@ -86,7 +86,7 @@
                 <option>Заказ оплачен</option>
                 <option>Выдано со склада</option>
             </select>
-            <h3>Итого: 0 руб.</h3>
+            <h3>Итого: $0</h3>
             <button style="background: #28a745;">Сохранить сделку</button>
         </div>
 
