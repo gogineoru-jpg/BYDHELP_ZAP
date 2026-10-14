@@ -31,7 +31,6 @@ def backup_to_yandex_disk():
     if os.path.exists(db_path):
         headers = {'Authorization': f'OAuth {YANDEX_TOKEN}'}
         try:
-            # Запрос ссылки для загрузки бэкапа в папку приложения
             url = "https://cloud-api.yandex.net/v1/disk/resources/upload?path=app:/crm_backup.db&overwrite=true"
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
@@ -47,7 +46,6 @@ with app.app_context():
 @app.route('/')
 @auth.login_required
 def index():
-    # Автоматический бэкап базы данных на Яндекс.Диск при открытии главной страницы
     backup_to_yandex_disk()
     
     query = request.args.get('q', '')
@@ -86,6 +84,29 @@ def add_product():
         db.session.add(new_p)
         db.session.commit()
         
+    return redirect(url_for('index'))
+
+# Удаление товара
+@app.route('/delete_product/<int:id>', methods=['POST'])
+@auth.login_required
+def delete_product(id):
+    product = Product.query.get_or_404(id)
+    db.session.delete(product)
+    db.session.commit()
+    return redirect(url_for('index'))
+
+# Изменение количества или данных товара
+@app.route('/edit_product/<int:id>', methods=['POST'])
+@auth.login_required
+def edit_product(id):
+    product = Product.query.get_or_404(id)
+    
+    product.name = request.form.get('name', product.name)
+    product.brand = request.form.get('brand', product.brand)
+    product.sell_price = float(request.form.get('sell_price', product.sell_price))
+    product.stock = int(request.form.get('stock', product.stock))
+    
+    db.session.commit()
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
