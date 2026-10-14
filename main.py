@@ -12,7 +12,7 @@ db.init_app(app)
 auth = HTTPBasicAuth()
 
 USERS = {
-    "admin": "zap12345"  # Логин и пароль
+    "admin": "zap12345"
 }
 
 @auth.verify_password
@@ -45,6 +45,7 @@ with app.app_context():
 @app.route('/')
 @auth.login_required
 def index():
+    # Автоматический бэкап при заходе
     backup_to_yandex_disk()
     
     query = request.args.get('q', '')
@@ -59,6 +60,13 @@ def index():
         
     orders = Order.query.order_by(Order.id.desc()).all()
     return render_template('index.html', products=products, orders=orders, query=query)
+
+# Маршрут для ручного бэкапа по кнопке
+@app.route('/manual_backup', methods=['POST'])
+@auth.login_required
+def manual_backup():
+    backup_to_yandex_disk()
+    return redirect(url_for('index'))
 
 @app.route('/add_product', methods=['POST'])
 @auth.login_required
@@ -99,7 +107,6 @@ def edit_product(id):
     db.session.commit()
     return redirect(url_for('index'))
 
-# Создание заказа (сделки) с выбранными товарами
 @app.route('/create_order', methods=['POST'])
 @auth.login_required
 def create_order():
@@ -136,7 +143,6 @@ def create_order():
                     )
                     db.session.add(order_item)
                     
-                    # Списываем со склада (опционально)
                     if product.stock >= qty:
                         product.stock -= qty
         except ValueError:
@@ -146,7 +152,6 @@ def create_order():
     db.session.commit()
     return redirect(url_for('index'))
 
-# Удаление заказа
 @app.route('/delete_order/<int:id>', methods=['POST'])
 @auth.login_required
 def delete_order(id):
