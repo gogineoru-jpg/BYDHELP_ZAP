@@ -38,6 +38,21 @@
         }
         .backup-btn:hover { background: #0369a1; }
 
+        /* Панель фильтра по месяцам (Календарь) */
+        .calendar-filter {
+            background: rgba(30, 41, 59, 0.85);
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .calendar-filter label { font-size: 13px; font-weight: 600; color: #cbd5e1; }
+        .calendar-filter input { width: auto; margin: 0; padding: 6px 10px; }
+        .calendar-filter button { width: auto; padding: 6px 14px; font-size: 13px; background: #0284c7; }
+
         /* Блок Аналитики */
         .analytics-grid {
             display: grid;
@@ -125,6 +140,16 @@
         </form>
     </header>
 
+    <!-- Календарь / Фильтр по месяцам -->
+    <form action="/" method="GET" class="calendar-filter">
+        <label for="monthPicker">📅 Выбрать месяц для отчета:</label>
+        <input type="month" id="monthPicker" name="month" value="{{ selected_month }}">
+        <button type="submit">Показать</button>
+        {% if selected_month %}
+        <a href="/" style="color: #38bdf8; font-size: 13px; text-decoration: none;">Сбросить фильтр</a>
+        {% endif %}
+    </form>
+
     <!-- Блок Аналитики -->
     <div class="analytics-grid">
         <div class="stat-card">
@@ -136,11 +161,11 @@
             <div class="stat-value blue">${{ analytics.stock_sell }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-title">Общая выручка (Продано)</div>
+            <div class="stat-title">Выручка за период</div>
             <div class="stat-value blue">${{ analytics.total_sales }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-title">Чистая прибыль</div>
+            <div class="stat-title">Прибыль за период</div>
             <div class="stat-value green">${{ analytics.total_profit }}</div>
         </div>
     </div>
@@ -208,7 +233,6 @@
 
                 <p style="margin: 8px 0 4px; font-weight: 600; font-size: 13px; color: #cbd5e1;">Выберите товары для продажи:</p>
                 
-                <!-- Поле живого поиска запчастей в 3-м блоке -->
                 <input type="text" id="orderSearchInput" onkeyup="filterOrderProducts()" placeholder="🔍 Поиск детали по OEM или названию..." style="margin-bottom: 6px; font-size: 12px; padding: 6px 10px;">
 
                 <div class="order-products-box" id="orderProductsBox">
@@ -216,7 +240,7 @@
                     <div class="order-product-item" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
                         <label style="font-size: 12px; display: flex; align-items: center; gap: 6px; flex: 1; cursor: pointer;">
                             <input type="checkbox" name="product_ids" value="{{ p.id }}" style="width: auto; margin: 0;">
-                            <span class="product-text">{{ p.oem }} — {{ p.name }} (<span style="color: #38bdf8;">${{ p.sell_price }}</span>)</span>
+                            <span class="product-text">{{ p.oem }} — {{ p.name }} (<span style="color: #38bdf8;">${{ p.sell_price }}</span>) [Ост: {{ p.stock }}]</span>
                         </label>
                         <input type="number" name="quantities" value="1" min="1" style="width: 50px; padding: 3px; font-size: 12px; margin: 0; height: 26px;" placeholder="Кол">
                     </div>
@@ -228,11 +252,11 @@
                 <button type="submit" style="background: #16a34a; margin-top: 10px;">Сохранить заказ-наряд</button>
             </form>
 
-            <h3 style="margin-top: 20px; border-bottom: 1px solid #475569; padding-bottom: 5px; font-size: 15px;">Активные заказы</h3>
+            <h3 style="margin-top: 20px; border-bottom: 1px solid #475569; padding-bottom: 5px; font-size: 15px;">Заказы за период</h3>
             <ul style="max-height: 250px; overflow-y: auto;">
                 {% for o in orders %}
                 <li class="order-card">
-                    <strong>Клиент: {{ o.client_name }}</strong><br>
+                    <strong>Клиент: {{ o.client_name }}</strong> <span style="font-size: 11px; color: #94a3b8; float: right;">{{ o.created_at.strftime('%d.%m.%Y %H:%M') }}</span><br>
                     VIN: {{ o.vin or 'не указан' }} | Статус: <b style="color: #f59e0b;">{{ o.status }}</b><br>
                     <strong style="color: #cbd5e1;">Состав заказа:</strong>
                     <ul style="margin: 4px 0; padding-left: 15px; list-style: disc;">
@@ -246,14 +270,13 @@
                     </form>
                 </li>
                 {% else %}
-                <p style="color: #94a3b8; text-align: center; font-size: 12px;">Нет оформленных заказов</p>
+                <p style="color: #94a3b8; text-align: center; font-size: 12px;">Заказов за выбранный месяц не найдено</p>
                 {% endfor %}
             </ul>
         </div>
 
     </div>
 
-    <!-- Скрипт быстрого поиска товаров внутри блока оформления заказа -->
     <script>
         function filterOrderProducts() {
             var input = document.getElementById('orderSearchInput');
