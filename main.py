@@ -1,5 +1,6 @@
 import os
 import requests
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for
 from flask_httpauth import HTTPBasicAuth
 from models import db, Client, Vehicle, Product, Order, OrderItem
@@ -57,24 +58,38 @@ def index():
         products = Product.query.all()
         
     all_products = Product.query.all()
-    orders = Order.query.order_by(Order.id.desc()).all()
+    
+    # Фильтр заказов по выбранному месяцу (календарь)
+    selected_month = request.args.get('month', '')
+    orders_query = Order.query
+    
+    if selected_month:
+        try:
+            year, month = selected_month.split('-')
+            orders_query = orders_query.filter(
+                db.extract('year', Order.created_at) == int(year),
+                db.extract('month', Order.created_at) == int(month)
+            )
+        except Exception:
+            pass
+            
+    orders = orders_query.order_by(Order.id.desc()).all()
 
-    # Расчет аналитики
-    stock_value_cost = sum(p.purchase_price * p.stock for p in all_products)  # Склад по закупке
-    stock_value_sell = sum(p.sell_price * p.stock for p in all_products)      # Склад по продаже
+    # Аналитика склада (всегда по всему складу)
+    stock_value_cost = sum(p.purchase_price * p.stock for p in all_products)
+    stock_value_sell = sum(p.sell_price * p.stock for p in all_products)
     
-    total_sales = sum(o.total_price for o in orders)                          # Всего продано (выручка)
+    # Аналитика продаж за выбранный период
+    total_sales = sum(o.total_price for o in orders)
     
-    # Считаем себестоимость всех проданных товаров для расчета прибыли
     total_cost_sold = 0.0
     for o in orders:
         for item in o.items:
-            # Ищем закупочную цену детали по OEM
             prod = Product.query.filter_by(oem=item.oem).first()
             p_price = prod.purchase_price if prod else 0.0
             total_cost_sold += p_price * item.quantity
 
-    total_profit = total_sales - total_cost_sold                              # Чистая прибыль
+    total_profit = total_sales - total_cost_sold
 
     analytics = {
         "stock_cost": round(stock_value_cost, 2),
@@ -83,7 +98,7 @@ def index():
         "total_profit": round(total_profit, 2)
     }
 
-    return render_template('index.html', products=products, orders=orders, query=query, analytics=analytics)
+    return render_template('index.html', products=products, orders=orders, query=query, analytics=analytics, selected_month=selected_month)
 
 @app.route('/manual_backup', methods=['POST'])
 @auth.login_required
@@ -97,9 +112,9 @@ def add_product():
     oem = request.form.get('oem')
     name = request.form.get('name')
     brand = request.form.get('brand')
-    purchase_price = float(request.form.get('purchase_price', 0))
-    sell_price = float(request.form.get('sell_price', 0))
-    stock = int(request.form.get('stock', 0))
+    purchase_price = float(request.form.get('purchase_price') or 0)
+    sell_price = float(request.form.get('sell_price') or 0)
+    stock = int(request.form.get('stock') or 1)
     
     existing = Product.query.filter_by(oem=oem).first()
     if not existing and oem and name:
@@ -125,8 +140,8 @@ def edit_product(id):
     product = Product.query.get_or_404(id)
     product.name = request.form.get('name', product.name)
     product.brand = request.form.get('brand', product.brand)
-    product.sell_price = float(request.form.get('sell_price', product.sell_price))
-    product.stock = int(request.form.get('stock', product.stock))
+    product.sell_price = float(request.form.get('sell_price') or product.sell_price)
+    product.stock = int(request.form.get('stock') or product.stock)
     db.session.commit()
     return redirect(url_for('index'))
 
@@ -140,7 +155,7 @@ def create_order():
     product_ids = request.form.getlist('product_ids')
     quantities = request.form.getlist('quantities')
     
-    if not client_name:
+    if not client_name or not product_ids:
         return redirect(url_for('index'))
         
     new_order = Order(client_name=client_name, vin=vin, status=status, total_price=0.0)
