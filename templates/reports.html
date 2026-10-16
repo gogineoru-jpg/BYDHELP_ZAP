@@ -1,1 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Отчёты{% endblock %}
+{% block head %}
+<style>
+.bars{display:flex;align-items:flex-end;gap:3px;height:160px;padding:0 18px 4px}
+.bar{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px;position:relative;opacity:.85}
+.bar:hover{opacity:1}
+.bar.zero{background:var(--line)}
+.bar-labels{display:flex;gap:3px;padding:6px 18px 14px;font-size:10px;color:var(--ink-3)}
+.bar-labels span{flex:1;text-align:center;overflow:hidden}
+.share{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:6px}
+.share i{display:block;height:100%;background:var(--accent)}
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Отчёты</h1>
+    <div class="sub">Период {{ d_from[8:10] }}.{{ d_from[5:7] }}.{{ d_from[:4] }} — {{ d_to[8:10] }}.{{ d_to[5:7] }}.{{ d_to[:4] }}</div>
+  </div>
+  <form method="GET" class="row" style="align-items:flex-end;flex-wrap:wrap">
+    <label class="f" style="margin:0"><span>С</span><input type="date" name="from" value="{{ d_from }}"></label>
+    <label class="f" style="margin:0"><span>По</span><input type="date" name="to" value="{{ d_to }}"></label>
+    <button class="btn btn-primary" type="submit" style="flex:none">Показать</button>
+  </form>
+</div>
 
+<div class="grid g-4" style="margin-bottom:16px">
+  <div class="card stat"><div class="stat-label">Выручка</div><div class="stat-value">{{ stats.sales|money }}</div><div class="stat-note">{{ stats.orders }} продаж · средний чек {{ stats.avg|money }}</div></div>
+  <div class="card stat"><div class="stat-label">Закуп проданного</div><div class="stat-value">{{ stats.cost|money }}</div><div class="stat-note">скидки {{ stats.discounts|money }}</div></div>
+  <div class="card stat"><div class="stat-label">Прибыль</div><div class="stat-value c-ok">{{ stats.profit|money }}</div><div class="stat-note">маржа {{ '%.0f'|format(stats.margin) }}%</div></div>
+  <div class="card stat"><div class="stat-label">Запросов под заказ</div><div class="stat-value">{{ stats.requests }}</div><div class="stat-note">без продажи со склада</div></div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <div class="card-head"><h2>Выручка по дням</h2></div>
+  <div style="padding-top:16px">
+    <div class="bars">
+      {% for d in days %}<div class="bar {{ 'zero' if not d.sum }}" style="height:{{ (d.sum / max_day * 100)|round(1) }}%" title="{{ d.label }}: {{ d.sum|money }}"></div>{% endfor %}
+    </div>
+    <div class="bar-labels">
+      {% for d in days %}<span>{% if days|length <= 16 or loop.first or loop.last or loop.index % 5 == 0 %}{{ d.label }}{% endif %}</span>{% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="grid g-side" style="align-items:start;margin-bottom:16px">
+  <div class="card">
+    <div class="card-head"><h2>Самые продаваемые</h2></div>
+    {% if top %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Запчасть</th><th class="num">Шт.</th><th class="num">Выручка</th><th class="num">Прибыль</th></tr></thead>
+      <tbody>{% for t in top %}
+      <tr><td>{{ t.name }}<div class="muted oem">{{ t.oem }}</div></td><td class="num">{{ t.qty }}</td><td class="num">{{ t.sum|money }}</td><td class="num c-ok">{{ t.profit|money }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="empty">Продаж за период нет</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>По способу оплаты</h2></div>
+    {% if by_payment %}
+    <ul class="list">
+      {% for k, v in by_payment.items() %}
+      <li style="display:block">
+        <div style="display:flex;justify-content:space-between"><span>{{ k }} <span class="muted">· {{ v.count }}</span></span><b class="num">{{ v.sum|money }}</b></div>
+        <div class="share"><i style="width:{{ (v.sum / stats.sales * 100) if stats.sales else 0 }}%"></i></div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<div class="empty">Нет данных</div>{% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2>Неликвид — не продавалось 90 дней</h2>
+    <span class="muted">заморожено {{ dead_value|money }}</span>
+  </div>
+  {% if dead %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Запчасть</th><th class="hide-m">Полка</th><th class="num">Остаток</th><th class="num">По закупу</th></tr></thead>
+    <tbody>{% for p in dead %}
+    <tr><td><a class="row-link" href="{{ url_for('product_page', id=p.id) }}">{{ p.name }}</a><div class="muted oem">{{ p.oem }}</div></td>
+    <td class="hide-m">{{ p.location or '—' }}</td><td class="num">{{ p.stock }}</td><td class="num">{{ ((p.purchase_price or 0) * (p.stock or 0))|money }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty">Всё продаётся — неликвида нет</div>{% endif %}
+</div>
+{% endblock %}
