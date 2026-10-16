@@ -1,1 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Продажа{% endblock %}
+{% block head %}
+<style>
+.pick{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.pick:hover{background:var(--surface-2)}
+.pick.off{opacity:.45;cursor:not-allowed}
+.cart-row{display:grid;grid-template-columns:minmax(0,1fr) 74px 96px 90px 32px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.cart-row input{padding:7px 8px}
+.x{border:none;background:none;color:var(--ink-3);font-size:20px;cursor:pointer;line-height:1}
+.x:hover{color:var(--bad)}
+.total{display:flex;justify-content:space-between;align-items:baseline;padding-top:12px}
+.total b{font-size:26px;font-variant-numeric:tabular-nums}
+@media (max-width:960px){ .cart-row{grid-template-columns:minmax(0,1fr) 64px 84px 28px} .cart-row .line-sum{display:none} }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Продажа</h1>
+    <div class="sub">Найдите деталь, добавьте в чек, укажите оплату. Остаток спишется автоматически.</div>
+  </div>
+</div>
 
+<form action="{{ url_for('create_order') }}" method="POST" id="saleForm">
+<div class="grid g-2" style="align-items:start">
+  <div class="card">
+    <div class="card-pad" style="padding-bottom:12px">
+      <input id="find" type="search" placeholder="OEM, название, бренд или аналог…" autocomplete="off" autofocus>
+    </div>
+    <div id="results" style="max-height:520px;overflow-y:auto;border-top:1px solid var(--line)"></div>
+  </div>
+
+  <div class="stack">
+    <div class="card card-pad">
+      <h2>Чек</h2>
+      <div id="cart"></div>
+      <div id="cartEmpty" class="muted" style="padding:14px 0">Чек пуст. Нажмите на деталь слева. Если нужной детали нет — оставьте чек пустым и опишите запрос ниже: сохранится как «под заказ».</div>
+      <div class="row" style="margin-top:12px">
+        <label class="f" style="margin:0"><span>Скидка, $</span><input name="discount" id="discount" type="number" step="0.01" min="0" value="0"></label>
+        <label class="f" style="margin:0"><span>Оплата</span>
+          <select name="payment_method">{% for m in PAYMENT_METHODS %}<option>{{ m }}</option>{% endfor %}</select>
+        </label>
+      </div>
+      <div class="total"><span class="muted">Итого</span><b id="total">$0</b></div>
+    </div>
+
+    <div class="card card-pad">
+      <h2>Клиент <span class="muted" style="font-weight:400">— необязательно для розницы</span></h2>
+      <div class="row">
+        <label class="f"><span>Имя</span><input name="first_name"></label>
+        <label class="f"><span>Фамилия</span><input name="last_name"></label>
+      </div>
+      <div class="row">
+        <label class="f"><span>Телефон</span><input name="phone" type="tel" placeholder="+998"></label>
+        <label class="f"><span>VIN</span><input name="vin" maxlength="17" style="text-transform:uppercase"></label>
+      </div>
+      <label class="f"><span>Комментарий / запрос детали под заказ</span><textarea name="comment"></textarea></label>
+      <label class="f"><span>Статус</span>
+        <select name="status">{% for s in ORDER_STATUSES %}<option>{{ s }}</option>{% endfor %}</select>
+      </label>
+      <button class="btn btn-primary btn-block" type="submit" id="submitBtn">Оформить</button>
+    </div>
+  </div>
+</div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+const catalog = {{ catalog|tojson }};
+const byId = Object.fromEntries(catalog.map(p => [p.id, p]));
+const cart = new Map(); // id -> {qty, price}
+const $ = id => document.getElementById(id);
+const fmt = v => '$' + (Math.round(v * 100) / 100).toLocaleString('ru-RU', {maximumFractionDigits: 2});
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function renderResults(){
+  const q = $('find').value.trim().toLowerCase();
+  let list = catalog;
+  if(q) list = catalog.filter(p => (p.oem + ' ' + p.name + ' ' + p.brand + ' ' + p.analogs + ' ' + p.loc).toLowerCase().includes(q));
+  list = list.slice(0, 60);
+  if(!list.length){ $('results').innerHTML = '<div class="empty">Ничего не найдено</div>'; return; }
+  $('results').innerHTML = list.map(p => {
+    const inCart = cart.has(p.id) ? cart.get(p.id).qty : 0;
+    const left = p.stock - inCart;
+    const tag = p.stock <= 0 ? '<span class="tag tag-bad">нет</span>' : `<span class="tag ${left<=0?'tag-warn':'tag-ok'}">${left} шт.</span>`;
+    return `<div class="pick ${left<=0?'off':''}" data-id="${p.id}">
+      <div style="min-width:0"><div style="font-weight:600">${esc(p.name)}</div>
+      <div class="muted"><span class="oem">${esc(p.oem)}</span>${p.brand?' · '+esc(p.brand):''}${p.loc?' · полка '+esc(p.loc):''}</div></div>
+      <div style="text-align:right;white-space:nowrap"><div style="font-weight:600">${fmt(p.price)}</div>${tag}</div></div>`;
+  }).join('');
+}
+
+function add(id){
+  const p = byId[id]; if(!p) return;
+  const cur = cart.get(id) || {qty: 0, price: p.price};
+  if(cur.qty >= p.stock) return;
+  cur.qty += 1; cart.set(id, cur); renderCart(); renderResults();
+}
+
+function renderCart(){
+  const rows = [...cart.entries()].map(([id, c]) => {
+    const p = byId[id];
+    return `<div class="cart-row">
+      <div style="min-width:0"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</div><div class="muted oem">${esc(p.oem)} · есть ${p.stock}</div></div>
+      <input type="hidden" name="item_id" value="${id}">
+      <input name="item_qty" type="number" min="1" max="${p.stock}" value="${c.qty}" data-id="${id}" data-f="qty" title="Количество">
+      <input name="item_price" type="number" step="0.01" min="0" value="${c.price}" data-id="${id}" data-f="price" title="Цена за шт.">
+      <div class="num line-sum" style="text-align:right;font-weight:600">${fmt(c.qty * c.price)}</div>
+      <button type="button" class="x" data-del="${id}" title="Убрать">×</button>
+    </div>`;
+  });
+  const head = rows.length ? '<div class="cart-row muted" style="padding:0 0 6px"><span>Деталь</span><span>Кол-во</span><span>Цена, $</span><span class="line-sum" style="text-align:right">Сумма</span><span></span></div>' : '';
+  $('cart').innerHTML = head + rows.join('');
+  $('cartEmpty').style.display = cart.size ? 'none' : 'block';
+  $('submitBtn').textContent = cart.size ? 'Оформить продажу' : 'Сохранить запрос';
+  total();
+}
+
+function total(){
+  let sum = 0; cart.forEach(c => sum += c.qty * c.price);
+  const d = parseFloat($('discount').value) || 0;
+  $('total').textContent = fmt(Math.max(sum - d, 0));
+}
+
+$('find').addEventListener('input', renderResults);
+$('find').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); const first = document.querySelector('.pick:not(.off)'); if(first) add(+first.dataset.id); }
+});
+$('results').addEventListener('click', e => { const el = e.target.closest('.pick'); if(el && !el.classList.contains('off')) add(+el.dataset.id); });
+$('cart').addEventListener('input', e => {
+  const id = +e.target.dataset.id; if(!id) return;
+  const c = cart.get(id), p = byId[id];
+  if(e.target.dataset.f === 'qty'){ let v = parseInt(e.target.value) || 0; if(v > p.stock){ v = p.stock; e.target.value = v; } c.qty = v; }
+  else c.price = parseFloat(e.target.value) || 0;
+  e.target.closest('.cart-row').querySelector('.line-sum').textContent = fmt(c.qty * c.price);
+  total(); renderResults();
+});
+$('cart').addEventListener('click', e => { const id = e.target.dataset.del; if(id){ cart.delete(+id); renderCart(); renderResults(); } });
+$('discount').addEventListener('input', total);
+$('saleForm').addEventListener('submit', e => { $('submitBtn').disabled = true; });
+
+const preset = new URLSearchParams(location.search).get('add');
+if(preset) add(+preset);
+renderResults(); renderCart();
+</script>
+{% endblock %}
