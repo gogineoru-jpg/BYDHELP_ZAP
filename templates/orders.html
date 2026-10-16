@@ -1,1 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Заказы{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Заказы и запросы</h1>
+    <div class="sub">Продажи со склада и запросы клиентов под заказ</div>
+  </div>
+  <div class="tabs">
+    <a class="tab {{ 'on' if not st }}" href="{{ url_for('orders_page', q=query) }}">Все</a>
+    <a class="tab {{ 'on' if st == 'sales' }}" href="{{ url_for('orders_page', q=query, status='sales') }}">Продажи</a>
+    <a class="tab {{ 'on' if st == 'requests' }}" href="{{ url_for('orders_page', q=query, status='requests') }}">Запросы</a>
+  </div>
+</div>
 
+<form method="GET" action="{{ url_for('orders_page') }}" class="row" style="margin-bottom:16px;max-width:560px">
+  <input type="hidden" name="status" value="{{ st }}">
+  <input type="search" name="q" value="{{ query }}" placeholder="Имя, телефон, VIN или текст запроса">
+  <button class="btn" type="submit" style="flex:none">Найти</button>
+</form>
+
+<div class="stack" style="gap:10px">
+{% for o in orders %}
+  {% set is_sale = o.items|length > 0 %}
+  <details class="box" id="o{{ o.id }}" {% if open_id == o.id %}open{% endif %}>
+    <summary>
+      <div style="display:flex;gap:14px;align-items:center;min-width:0;flex:1;flex-wrap:wrap">
+        <span class="muted" style="width:52px">№{{ o.id }}</span>
+        <div style="min-width:0;flex:1">
+          <div>{{ o.client_name }}{% if o.phone and o.phone != '—' %} <span class="muted">· {{ o.phone }}</span>{% endif %}</div>
+          <div class="muted" style="font-weight:400">{{ o.created_at|local }}{% if o.vin %} · VIN {{ o.vin }}{% endif %}{% if not is_sale and o.comment %} · {{ o.comment[:70] }}{% endif %}</div>
+        </div>
+        <span class="tag {{ 'tag-ok' if o.status in ORDER_STATUSES[:2] else 'tag-info' }}">{{ o.status }}</span>
+        <span class="num" style="width:96px;text-align:right">{% if is_sale %}{{ o.total_price|money }}{% else %}<span class="muted">—</span>{% endif %}</span>
+      </div>
+    </summary>
+    <div class="inner">
+      {% if is_sale %}
+      <div class="table-wrap" style="border:1px solid var(--line);border-radius:8px;margin-bottom:14px">
+        <table>
+          <thead><tr><th>Деталь</th><th class="num">Кол-во</th><th class="num">Цена</th><th class="num">Сумма</th></tr></thead>
+          <tbody>
+          {% for i in o.items %}
+          <tr>
+            <td>{% if i.product_id %}<a class="row-link" href="{{ url_for('product_page', id=i.product_id) }}">{{ i.product_name }}</a>{% else %}{{ i.product_name }}{% endif %}<div class="muted oem">{{ i.oem }}</div></td>
+            <td class="num">{{ i.quantity }}</td>
+            <td class="num">{{ i.price|money }}</td>
+            <td class="num" style="font-weight:600">{{ (i.price * i.quantity)|money }}</td>
+          </tr>
+          {% endfor %}
+          {% if o.discount %}<tr><td colspan="3" class="muted">Скидка</td><td class="num">−{{ o.discount|money }}</td></tr>{% endif %}
+          <tr><td colspan="3" style="font-weight:600">Итого{% if o.payment_method %} · {{ o.payment_method }}{% endif %}</td><td class="num" style="font-weight:700">{{ o.total_price|money }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      <form action="{{ url_for('update_order', id=o.id) }}" method="POST">
+        <input type="hidden" name="q" value="{{ query }}"><input type="hidden" name="st" value="{{ st }}">
+        <div class="row">
+          <label class="f"><span>Статус</span>
+            <select name="status">{% for s in ORDER_STATUSES %}<option {% if s == o.status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+            {% if o.status not in ORDER_STATUSES %}<option selected>{{ o.status }}</option>{% endif %}</select>
+          </label>
+          {% if is_sale %}
+          <label class="f"><span>Оплата</span>
+            <select name="payment_method"><option value="">Не указано</option>{% for m in PAYMENT_METHODS %}<option {% if m == o.payment_method %}selected{% endif %}>{{ m }}</option>{% endfor %}</select>
+          </label>
+          {% endif %}
+        </div>
+        <label class="f"><span>Комментарий</span><textarea name="comment">{{ o.comment or '' }}</textarea></label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" type="submit">Сохранить</button>
+          {% if is_sale %}<a class="btn" href="{{ url_for('receipt', id=o.id) }}" target="_blank">Чек / накладная</a>{% endif %}
+          {% if o.phone and o.phone != '—' %}<a class="btn" href="tel:{{ o.phone }}">Позвонить</a>{% endif %}
+        </div>
+      </form>
+      <form action="{{ url_for('delete_order', id=o.id) }}" method="POST" style="margin-top:10px"
+            onsubmit="return confirm('Удалить заказ №{{ o.id }}?{% if is_sale %} Товары вернутся на склад.{% endif %}');">
+        <button class="btn btn-danger btn-sm" type="submit">Удалить{% if is_sale %} и вернуть на склад{% endif %}</button>
+      </form>
+    </div>
+  </details>
+{% else %}
+  <div class="card empty">{% if query %}Ничего не найдено{% else %}Заказов пока нет. <a href="{{ url_for('sale_page') }}">Оформить первую продажу</a>{% endif %}</div>
+{% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}
+{% if open_id %}<script>document.getElementById('o{{ open_id }}')?.scrollIntoView({block:'center'});</script>{% endif %}
+{% endblock %}
