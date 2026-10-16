@@ -1,1 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Приход{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Приход товара</h1>
+    <div class="sub">Поступление от поставщика. Остаток увеличится, запись попадёт в журнал.</div>
+  </div>
+</div>
 
+<div class="grid g-side" style="align-items:start">
+  <div class="card">
+    <div class="card-head"><h2>Последние приходы</h2><a class="btn btn-sm" href="{{ url_for('movements_page', kind='Приход') }}">Все</a></div>
+    {% with movements=recent %}{% include "_movements_table.html" %}{% endwith %}
+  </div>
+
+  <div class="card card-pad">
+    <form action="{{ url_for('receive_page') }}" method="POST" id="recvForm">
+      <label class="f"><span>OEM / артикул *</span>
+        <input name="oem" id="oem" list="oemList" value="{{ preset_oem }}" required autocomplete="off" autofocus>
+      </label>
+      <datalist id="oemList">
+        {% for p in products %}<option value="{{ p.oem }}">{{ p.name }} · ост. {{ p.stock or 0 }}</option>{% endfor %}
+      </datalist>
+
+      <div id="found" class="flash flash-ok" style="display:none"></div>
+      <div id="newFields" style="display:none">
+        <div class="flash flash-error" style="margin-bottom:12px">Такого OEM нет в базе — будет создана новая запчасть</div>
+        <label class="f"><span>Название *</span><input name="name" id="name"></label>
+        <label class="f"><span>Бренд</span><input name="brand"></label>
+      </div>
+
+      <div class="row">
+        <label class="f"><span>Количество *</span><input name="quantity" type="number" min="1" value="1" required></label>
+        <label class="f"><span>Полка</span><input name="location" id="loc"></label>
+      </div>
+      <div class="row">
+        <label class="f"><span>Закуп за шт., $</span><input name="purchase_price" id="pp" type="number" step="0.01" min="0"></label>
+        <label class="f"><span>Цена продажи, $</span><input name="sell_price" id="sp" type="number" step="0.01" min="0"></label>
+      </div>
+      <label class="f"><span>Поставщик</span><input name="supplier" list="supList"></label>
+      <datalist id="supList">{% for s in suppliers %}<option value="{{ s }}">{% endfor %}</datalist>
+      <label class="f"><span>Комментарий</span><input name="comment" placeholder="№ накладной и т.п."></label>
+      <button class="btn btn-ok btn-block" type="submit">Оприходовать</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const info = {
+{% for p in products %}{{ p.oem|lower|tojson }}: {name: {{ p.name|tojson }}, stock: {{ p.stock or 0 }}, pp: {{ p.purchase_price or 0 }}, sp: {{ p.sell_price or 0 }}, loc: {{ (p.location or '')|tojson }} },
+{% endfor %}};
+const oem = document.getElementById('oem'), found = document.getElementById('found'),
+      nf = document.getElementById('newFields'), nameInp = document.getElementById('name');
+function check(){
+  const v = oem.value.trim().toLowerCase();
+  if(!v){ found.style.display='none'; nf.style.display='none'; nameInp.required=false; return; }
+  const p = info[v];
+  if(p){
+    found.textContent = p.name + ' — сейчас на складе ' + p.stock + ' шт.';
+    found.style.display='block'; nf.style.display='none'; nameInp.required=false;
+    document.getElementById('pp').placeholder = p.pp; document.getElementById('sp').placeholder = p.sp;
+    document.getElementById('loc').placeholder = p.loc;
+  } else {
+    found.style.display='none'; nf.style.display='block'; nameInp.required=true;
+  }
+}
+oem.addEventListener('input', check); check();
+</script>
+{% endblock %}
