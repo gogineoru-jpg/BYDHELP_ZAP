@@ -1,1 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Главная</h1>
+    <div class="sub">Итоги за {{ month_label }} · склад на сегодня</div>
+  </div>
+  <div class="tabs">
+    <a class="tab" href="{{ url_for('reports_page') }}">Отчёты</a>
+    <a class="tab" href="{{ url_for('movements_page') }}">Движение товара</a>
+  </div>
+</div>
 
+<div class="grid g-4" style="margin-bottom:16px">
+  <div class="card stat">
+    <div class="stat-label">Выручка за месяц</div>
+    <div class="stat-value">{{ stats.sales|money }}</div>
+    <div class="stat-note">{{ stats.orders }} продаж · средний чек {{ stats.avg|money }}</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">Прибыль за месяц</div>
+    <div class="stat-value c-ok">{{ stats.profit|money }}</div>
+    <div class="stat-note">выручка минус закуп</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">Склад по закупу</div>
+    <div class="stat-value">{{ stats.stock_cost|money }}</div>
+    <div class="stat-note">по продаже {{ stats.stock_sell|money }}</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">На складе</div>
+    <div class="stat-value">{{ stats.units }} <span style="font-size:14px;font-weight:500" class="c-muted">шт.</span></div>
+    <div class="stat-note">{{ stats.positions }} позиций{% if stats.low %} · <a href="{{ url_for('products_page', filter='low') }}" class="c-warn" style="font-weight:600">{{ stats.low }} заканчиваются</a>{% endif %}</div>
+  </div>
+</div>
+
+<div class="grid g-2">
+  <div class="card">
+    <div class="card-head"><h2>Пора заказать</h2><a class="btn btn-sm" href="{{ url_for('products_page', filter='low') }}">Все</a></div>
+    {% if low %}
+    <ul class="list">
+      {% for p in low %}
+      <li>
+        <div style="min-width:0">
+          <a class="row-link" href="{{ url_for('product_page', id=p.id) }}">{{ p.name }}</a>
+          <div class="muted"><span class="oem">{{ p.oem }}</span>{% if p.location %} · полка {{ p.location }}{% endif %}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="tag {{ 'tag-bad' if (p.stock or 0) <= 0 else 'tag-warn' }}">{{ p.stock or 0 }} шт.</span>
+          <div class="muted">мин. {{ p.min_stock }}</div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty">Всё в наличии. Задайте «мин. остаток» в карточке запчасти — и она появится здесь, когда начнёт заканчиваться.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Открытые запросы клиентов</h2><a class="btn btn-sm" href="{{ url_for('orders_page', status='requests') }}">Все</a></div>
+    {% if open_requests %}
+    <ul class="list">
+      {% for o in open_requests %}
+      <li>
+        <div style="min-width:0">
+          <a class="row-link" href="{{ url_for('orders_page', open=o.id) }}">№{{ o.id }} · {{ o.client_name }}</a>
+          <div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px">{{ o.comment or '—' }}</div>
+        </div>
+        <span class="tag tag-info">{{ o.status }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty">Открытых запросов нет</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-head"><h2>Последние движения</h2><a class="btn btn-sm" href="{{ url_for('movements_page') }}">Журнал</a></div>
+  {% include "_movements_table.html" %}
+</div>
+{% endblock %}
