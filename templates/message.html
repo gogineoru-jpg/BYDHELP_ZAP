@@ -1,1 +1,9 @@
-
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card card-pad" style="max-width:520px">
+  <h1 style="margin-bottom:8px">{{ title }}</h1>
+  <p class="c-muted" style="margin:0 0 16px">{{ text }}</p>
+  <a class="btn" href="{{ url_for('index') }}">На главную</a>
+</div>
+{% endblock %}
