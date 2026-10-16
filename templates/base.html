@@ -1,1 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Склад{% endblock %} · BYDHELP Запчасти</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f4f6; --surface:#ffffff; --surface-2:#f8f9fb; --line:#e3e6ea; --line-2:#cfd4da;
+  --ink:#14171c; --ink-2:#4b5563; --ink-3:#8a93a0;
+  --accent:#d92d27; --accent-ink:#ffffff; --accent-soft:#fdecea;
+  --ok:#15803d; --ok-soft:#e8f5ec; --warn:#b45309; --warn-soft:#fdf3e2; --bad:#b91c1c; --bad-soft:#fdeaea;
+  --info:#1d4ed8; --info-soft:#e8efff;
+  --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0e1013; --surface:#16191e; --surface-2:#1c2026; --line:#262b33; --line-2:#343b45;
+    --ink:#eef0f3; --ink-2:#b4bbc6; --ink-3:#7c8592;
+    --accent:#ef4438; --accent-soft:#3a1715;
+    --ok:#4ade80; --ok-soft:#12291b; --warn:#fbbf24; --warn-soft:#2e2410; --bad:#f87171; --bad-soft:#331616;
+    --info:#7aa2ff; --info-soft:#17213a; --shadow:none;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.num,td.num,.stat-value{font-variant-numeric:tabular-nums}
 
+/* каркас */
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+.side{background:var(--surface);border-right:1px solid var(--line);padding:18px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px;text-decoration:none}
+.brand-mark{width:32px;height:32px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;letter-spacing:.5px}
+.brand-name{font-weight:700;font-size:15px;line-height:1.1}
+.brand-sub{font-size:11px;color:var(--ink-3);font-weight:500}
+.nav-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;text-decoration:none;color:var(--ink-2);font-weight:500}
+.nav-link:hover{background:var(--surface-2);color:var(--ink)}
+.nav-link.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav-link svg{width:18px;height:18px;flex:none}
+.nav-sep{height:1px;background:var(--line);margin:10px 4px}
+.side-foot{margin-top:auto;font-size:12px;color:var(--ink-3);padding:8px}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:12px;padding:14px 28px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:5}
+.top-search{flex:1;max-width:520px;position:relative}
+.top-search input{padding-left:36px}
+.top-search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ink-3)}
+.top-actions{margin-left:auto;display:flex;gap:8px}
+.page{padding:24px 28px 60px;max-width:1280px;width:100%}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--ink-3);font-size:13px;margin-top:2px}
+h2{font-size:15px;margin:0 0 12px;font-weight:600}
+
+/* карточки и сетки */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-pad{padding:18px}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+.card-head h2{margin:0}
+.grid{display:grid;gap:16px}
+.g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g-side{grid-template-columns:minmax(0,1fr) 360px}
+.stack{display:flex;flex-direction:column;gap:16px}
+
+.stat{padding:16px 18px}
+.stat-label{font-size:12px;color:var(--ink-3);font-weight:500}
+.stat-value{font-size:24px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+.stat-note{font-size:12px;color:var(--ink-3);margin-top:2px}
+.c-ok{color:var(--ok)} .c-bad{color:var(--bad)} .c-warn{color:var(--warn)} .c-muted{color:var(--ink-3)} .c-accent{color:var(--accent)}
+
+/* формы */
+label.f{display:block;font-size:12px;font-weight:500;color:var(--ink-2);margin-bottom:12px}
+label.f > span{display:block;margin-bottom:5px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;outline:none;transition:border-color .15s, box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+textarea{resize:vertical;min-height:70px}
+.row{display:flex;gap:10px}
+.row > *{flex:1;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-weight:600;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:8px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background .15s,border-color .15s}
+.btn:hover{background:var(--surface-2)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn-primary:hover{background:var(--accent);filter:brightness(.94)}
+.btn-ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn-danger{color:var(--bad);border-color:var(--line-2)}
+.btn-danger:hover{background:var(--bad-soft)}
+.btn-sm{padding:6px 10px;font-size:13px}
+.btn-block{width:100%}
+.btn svg{width:16px;height:16px}
+
+/* таблицы */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:12px;font-weight:500;color:var(--ink-3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface-2)}
+td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--surface-2)}
+td.num,th.num{text-align:right;white-space:nowrap}
+.oem{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;font-weight:600}
+.row-link{text-decoration:none;font-weight:600}
+.row-link:hover{color:var(--accent)}
+.muted{color:var(--ink-3);font-size:12px}
+
+/* метки */
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.tag-ok{background:var(--ok-soft);color:var(--ok)}
+.tag-warn{background:var(--warn-soft);color:var(--warn)}
+.tag-bad{background:var(--bad-soft);color:var(--bad)}
+.tag-info{background:var(--info-soft);color:var(--info)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{padding:7px 12px;border-radius:999px;text-decoration:none;border:1px solid var(--line-2);font-weight:500;font-size:13px;color:var(--ink-2);background:var(--surface)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.tab b{font-weight:600;margin-left:4px;opacity:.7}
+
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 18px;border-bottom:1px solid var(--line)}
+.list li:last-child{border-bottom:none}
+.empty{padding:28px 18px;text-align:center;color:var(--ink-3)}
+
+.flash{padding:11px 14px;border-radius:8px;margin-bottom:16px;font-weight:500;border:1px solid transparent}
+.flash-ok{background:var(--ok-soft);color:var(--ok)}
+.flash-error{background:var(--bad-soft);color:var(--bad)}
+
+details.box{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+details.box > summary{cursor:pointer;padding:14px 18px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.box > summary::-webkit-details-marker{display:none}
+details.box > summary::after{content:"+";font-size:18px;color:var(--ink-3)}
+details.box[open] > summary::after{content:"–"}
+details.box > .inner{padding:0 18px 18px}
+
+/* мобильная версия */
+.mnav{display:none}
+@media (max-width: 960px){
+  .app{grid-template-columns:1fr}
+  .side{display:none}
+  .top{padding:12px 16px}
+  .page{padding:16px 16px 96px}
+  .g-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g-3,.g-2,.g-side{grid-template-columns:1fr}
+  .hide-m{display:none}
+  .mnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .mnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:500;text-decoration:none;color:var(--ink-3);padding:4px 0}
+  .mnav a.on{color:var(--accent)}
+  .mnav svg{width:22px;height:22px}
+  .stat-value{font-size:20px}
+  td,th{padding:10px}
+}
+@media print{ .side,.top,.mnav{display:none} .app{display:block} }
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+{% set icons = {
+  'home': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+  'box': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>',
+  'cart': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.6 12.4a1 1 0 0 0 1 .8h9.7a1 1 0 0 0 1-.8L21 7H6"/></svg>',
+  'in': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg>',
+  'list': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>',
+  'flow': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg>',
+  'chart': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  'search': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>'
+} %}
+{% set links = [
+  ('index', 'home', 'Главная'),
+  ('products_page', 'box', 'Склад'),
+  ('sale_page', 'cart', 'Продажа'),
+  ('receive_page', 'in', 'Приход'),
+  ('orders_page', 'list', 'Заказы'),
+  ('movements_page', 'flow', 'Движение'),
+  ('reports_page', 'chart', 'Отчёты'),
+] %}
+<div class="app">
+  <aside class="side">
+    <a class="brand" href="{{ url_for('index') }}">
+      <div class="brand-mark">BYD</div>
+      <div><div class="brand-name">BYDHELP</div><div class="brand-sub">Склад запчастей</div></div>
+    </a>
+    {% for ep, ic, label in links %}
+      {% if loop.index == 6 %}<div class="nav-sep"></div>{% endif %}
+      <a class="nav-link {% if nav == ep or (ep == 'products_page' and nav == 'product_page') %}on{% endif %}" href="{{ url_for(ep) }}">{{ icons[ic]|safe }}{{ label }}</a>
+    {% endfor %}
+    <div class="side-foot">
+      {% if not USE_POSTGRES %}
+      <form action="{{ url_for('manual_backup') }}" method="POST" style="margin-bottom:8px"><button class="btn btn-sm btn-block" type="submit">Бэкап на Яндекс.Диск</button></form>
+      {% endif %}
+      <a class="nav-link" style="padding:6px 4px" href="{{ url_for('export_products') }}">Скачать склад в Excel</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <form class="top-search" action="{{ url_for('products_page') }}" method="GET">
+        {{ icons['search']|safe }}
+        <input type="search" name="q" placeholder="Поиск по OEM, названию, бренду, полке…" value="{{ request.args.get('q','') if nav == 'products_page' else '' }}" autocomplete="off">
+      </form>
+      <div class="top-actions hide-m">
+        <a class="btn" href="{{ url_for('receive_page') }}">{{ icons['in']|safe }}Приход</a>
+        <a class="btn btn-primary" href="{{ url_for('sale_page') }}">{{ icons['cart']|safe }}Продажа</a>
+      </div>
+    </header>
+
+    <main class="page">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}<div class="flash flash-{{ cat }}">{{ msg }}</div>{% endfor %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<nav class="mnav">
+  {% for ep, ic, label in links[:5] %}
+  <a class="{% if nav == ep or (ep == 'products_page' and nav == 'product_page') %}on{% endif %}" href="{{ url_for(ep) }}">{{ icons[ic]|safe }}{{ label }}</a>
+  {% endfor %}
+</nav>
+{% block scripts %}{% endblock %}
+</body>
+</html>
