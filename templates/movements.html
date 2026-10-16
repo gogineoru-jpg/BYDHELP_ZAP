@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Движение товара{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Движение товара</h1>
+    <div class="sub">Все приходы, продажи, возвраты, списания и корректировки</div>
+  </div>
+</div>
+
+<form method="GET" class="card card-pad" style="margin-bottom:16px">
+  <div class="row" style="flex-wrap:wrap;align-items:flex-end">
+    <label class="f" style="margin:0;min-width:140px"><span>С</span><input type="date" name="from" value="{{ d_from }}"></label>
+    <label class="f" style="margin:0;min-width:140px"><span>По</span><input type="date" name="to" value="{{ d_to }}"></label>
+    <label class="f" style="margin:0;min-width:150px"><span>Тип</span>
+      <select name="kind"><option value="">Все</option>{% for k in kinds %}<option {% if k == kind %}selected{% endif %}>{{ k }}</option>{% endfor %}</select>
+    </label>
+    <label class="f" style="margin:0;min-width:180px;flex:2"><span>Поиск</span><input type="search" name="q" value="{{ q }}" placeholder="OEM, название, поставщик"></label>
+    <button class="btn btn-primary" type="submit" style="flex:none">Показать</button>
+  </div>
+</form>
+
+{% if totals %}
+<div class="grid g-4" style="margin-bottom:16px">
+  {% for k in kinds if k in totals %}
+  <div class="card stat">
+    <div class="stat-label">{{ k }}</div>
+    <div class="stat-value">{{ totals[k].qty }} шт.</div>
+    <div class="stat-note">на {{ totals[k].sum|money }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  {% with movements=rows %}{% include "_movements_table.html" %}{% endwith %}
+</div>
+{% endblock %}
