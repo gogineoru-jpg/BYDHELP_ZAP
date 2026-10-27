@@ -535,6 +535,100 @@ def writeoff(id):
     return redirect(url_for('product_page', id=id))
 
 
+def safe_next(url):
+    """Возврат только на страницы этого сайта."""
+    if url and url.startswith('/') and not url.startswith('//'):
+        return url
+    return url_for('receive_page')
+
+
+@app.route('/movement/<int:id>/edit', methods=['GET', 'POST'])
+@auth.login_required
+def edit_movement(id):
+    """Исправление прихода: количество, цена, поставщик, комментарий, запчасть."""
+    m = db.session.get(StockMovement, id) or abort(404)
+    if m.kind != KIND_IN:
+        flash('Изменять можно только приход. Продажи правятся через заказы.', 'error')
+        return redirect(url_for('movements_page'))
+
+    old_product = db.session.get(Product, m.product_id) if m.product_id else None
+    back = safe_next(request.values.get('next'))
+
+    if request.method == 'POST':
+        new_oem = (request.form.get('oem') or '').strip()
+        new_qty = to_int(request.form.get('quantity'), 0)
+        new_price = to_float(request.form.get('price'), m.price or 0)
+        if new_qty <= 0:
+            flash('Количество должно быть больше нуля', 'error')
+            return redirect(url_for('edit_movement', id=id, next=back))
+
+        new_product = Product.query.filter(func.lower(Product.oem) == new_oem.lower()).first() if new_oem else old_product
+        if not new_product:
+            flash(f'Запчасти с OEM {new_oem} нет в базе', 'error')
+            return redirect(url_for('edit_movement', id=id, next=back))
+
+        # убираем старый приход с остатка и добавляем новый
+        if old_product and old_product.id == new_product.id:
+            diff = new_qty - m.quantity
+            if (new_product.stock or 0) + diff < 0:
+                flash(f'Нельзя уменьшить приход: часть товара уже продана. На складе {new_product.stock} шт.', 'error')
+                return redirect(url_for('edit_movement', id=id, next=back))
+            new_product.stock = (new_product.stock or 0) + diff
+        else:
+            if old_product:
+                if (old_product.stock or 0) - m.quantity < 0:
+                    flash(f'Нельзя перенести приход: {old_product.name} уже продан(а). На складе {old_product.stock} шт.', 'error')
+                    return redirect(url_for('edit_movement', id=id, next=back))
+                old_product.stock = (old_product.stock or 0) - m.quantity
+            new_product.stock = (new_product.stock or 0) + new_qty
+
+        m.product_id = new_product.id
+        m.oem = new_product.oem
+        m.product_name = new_product.name
+        m.quantity = new_qty
+        m.price = new_price
+        m.supplier = (request.form.get('supplier') or '').strip() or None
+        m.comment = (request.form.get('comment') or '').strip() or None
+        m.stock_after = new_product.stock
+
+        if request.form.get('update_price'):
+            new_product.purchase_price = new_price
+        sell = request.form.get('sell_price')
+        if sell not in (None, ''):
+            new_product.sell_price = to_float(sell, new_product.sell_price or 0)
+
+        db.session.commit()
+        flash(f'Приход исправлен: {new_product.name}, {new_qty} шт. по {money_filter(new_price)}. На складе {new_product.stock} шт.', 'ok')
+        return redirect(back)
+
+    products = Product.query.order_by(Product.name).all()
+    suppliers = [s for (s,) in db.session.query(StockMovement.supplier)
+                 .filter(StockMovement.supplier.isnot(None)).distinct().limit(50)]
+    return render_template('movement_edit.html', m=m, p=old_product, products=products,
+                           suppliers=suppliers, back=back)
+
+
+@app.route('/movement/<int:id>/delete', methods=['POST'])
+@auth.login_required
+def delete_movement(id):
+    """Отмена ошибочного прихода: товар убирается с остатка, запись удаляется."""
+    m = db.session.get(StockMovement, id) or abort(404)
+    back = safe_next(request.form.get('next'))
+    if m.kind != KIND_IN:
+        flash('Удалять можно только приход', 'error')
+        return redirect(back)
+    p = db.session.get(Product, m.product_id) if m.product_id else None
+    if p:
+        if (p.stock or 0) - m.quantity < 0:
+            flash(f'Нельзя отменить приход: часть товара уже продана. На складе {p.stock} шт.', 'error')
+            return redirect(back)
+        p.stock = (p.stock or 0) - m.quantity
+    db.session.delete(m)
+    db.session.commit()
+    flash('Приход отменён' + (f', на складе {p.name} теперь {p.stock} шт.' if p else ''), 'ok')
+    return redirect(back)
+
+
 # ---------------------------------------------------------------------------
 # ПРОДАЖА / ЗАКАЗЫ
 # ---------------------------------------------------------------------------
