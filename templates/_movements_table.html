@@ -4,12 +4,12 @@
 <table>
   <thead><tr>
     <th>Дата</th><th>Тип</th>{% if not hide_product %}<th>Запчасть</th>{% endif %}
-    <th class="num">Кол-во</th><th class="num">Цена</th><th class="num">Остаток</th><th class="hide-m">Детали</th>
+    <th class="num">Кол-во</th><th class="num">Цена</th><th class="num">Остаток</th><th class="hide-m">Детали</th><th></th>
   </tr></thead>
   <tbody>
   {% for m in movements %}
   <tr>
-    <td class="muted" style="white-space:nowrap">{{ m.created_at|local }}</td>
+    <td class="muted" style="white-space:nowrap">{{ m.created_at|local('%d.%m.%y') }}<div>{{ m.created_at|local('%H:%M') }}</div></td>
     <td><span class="tag {{ kind_tag.get(m.kind,'') }}">{{ m.kind }}</span></td>
     {% if not hide_product %}
     <td>
@@ -18,11 +18,14 @@
     </td>
     {% endif %}
     <td class="num {{ 'c-ok' if m.quantity > 0 else 'c-bad' }}" style="font-weight:600">{{ '+' if m.quantity > 0 }}{{ m.quantity }}</td>
-    <td class="num">{{ m.price|money }}</td>
+    <td class="num {{ 'c-bad' if m.kind == 'Приход' and not m.price }}">{{ m.price|money }}</td>
     <td class="num">{{ m.stock_after if m.stock_after is not none else '—' }}</td>
     <td class="hide-m muted">
       {% if m.supplier %}{{ m.supplier }}{% endif %}
       {% if m.order_id %}<a href="{{ url_for('orders_page', open=m.order_id) }}">заказ №{{ m.order_id }}</a>{% elif m.comment %}{{ m.comment }}{% endif %}
+    </td>
+    <td style="text-align:right;padding-left:0">
+      {% if m.kind == 'Приход' %}<a class="btn btn-sm" style="padding:4px 9px;font-size:12px" href="{{ url_for('edit_movement', id=m.id, next=request.full_path) }}">Изменить</a>{% endif %}
     </td>
   </tr>
   {% endfor %}
