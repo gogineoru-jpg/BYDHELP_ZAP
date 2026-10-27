@@ -179,6 +179,7 @@ def inject_globals():
         'ORDER_STATUSES': ORDER_STATUSES,
         'PAYMENT_METHODS': PAYMENT_METHODS,
         'nav': request.endpoint,
+        'CAN_EDIT_MOVEMENT': 'edit_movement' in app.view_functions,
     }
 
 
